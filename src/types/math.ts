@@ -29,6 +29,15 @@ export interface Vector2 {
 //   ⚠️ 严禁在此处添加 sin / cos / tan / x / y 等派生字段
 // ─────────────────────────────────────────────
 
+/** 描述三角函数图像变换状态 */
+export interface TrigGraphState {
+  readonly A: number;
+  readonly omega: number;
+  readonly phi: number;
+  readonly b: number;
+  readonly funcType: 'sin' | 'cos';
+}
+
 /** useMathState Store 允许持有的最小真值集合 */
 export interface MathBaseState {
   /** 当前角度，弧度制，规范化区间 [0, 2π) */
@@ -36,6 +45,9 @@ export interface MathBaseState {
 
   /** 向量模长（单位长度 = 1，对应标准单位圆） */
   readonly radius: number;
+
+  /** 图像变换参数状态 */
+  readonly graphParams: TrigGraphState;
 
   /** 是否处于动画播放状态（控制标记，非数学真值） */
   readonly isAnimating: boolean;
@@ -97,6 +109,9 @@ export interface MathActions {
 
   /** 重置为初始状态（angleRad = 0, radius = 1, 停止动画） */
   reset(): void;
+
+  /** 更新三角函数图像变换参数 */
+  updateGraphParam<K extends keyof TrigGraphState>(key: K, value: TrigGraphState[K]): void;
 }
 
 // ─────────────────────────────────────────────

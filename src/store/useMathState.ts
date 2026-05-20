@@ -26,6 +26,13 @@ import { normalizeAngle } from '@/math/trigonometry';
 
 const INITIAL_ANGLE_RAD = 0;
 const INITIAL_RADIUS = 1;
+const INITIAL_GRAPH_PARAMS = {
+  A: 1,
+  omega: 1,
+  phi: 0,
+  b: 0,
+  funcType: 'sin' as const,
+};
 
 // ─────────────────────────────────────────────
 // § Store 创建
@@ -57,6 +64,7 @@ export const useMathState = create<MathStore>()((set) => ({
   // ── 基础状态（真值基底） ──────────────────────
   angleRad: INITIAL_ANGLE_RAD,
   radius: INITIAL_RADIUS,
+  graphParams: INITIAL_GRAPH_PARAMS,
   isAnimating: false,
   isAngleLocked: false,
 
@@ -96,8 +104,19 @@ export const useMathState = create<MathStore>()((set) => ({
     set({
       angleRad: INITIAL_ANGLE_RAD,
       radius: INITIAL_RADIUS,
+      graphParams: INITIAL_GRAPH_PARAMS,
       isAnimating: false,
       isAngleLocked: false,
     });
+  },
+
+  /** 更新三角函数图像变换参数 */
+  updateGraphParam(key, value) {
+    set((state) => ({
+      graphParams: {
+        ...state.graphParams,
+        [key]: value,
+      },
+    }));
   },
 }));

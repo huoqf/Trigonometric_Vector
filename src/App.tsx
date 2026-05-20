@@ -5,13 +5,17 @@
 
 import { useState, useEffect } from 'react';
 import { UnitCircleSlice } from '@/features/unit-circle/UnitCircleSlice';
+import { InductionSymmetry } from '@/features/unit-circle/InductionSymmetry';
 import { VectorDisplay } from '@/features/vector/VectorDisplay';
 import { VectorAddition } from '@/features/vector/VectorAddition';
 import { VectorDotProduct } from '@/features/vector/VectorDotProduct';
+import { TrigFunctionGraph } from '@/features/function-graph/TrigFunctionGraph';
+import { AuxiliaryAngle } from '@/features/function-graph/AuxiliaryAngle';
+import { SolvingTriangle } from '@/features/function-graph/SolvingTriangle';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'circle' | 'vector' | 'addition' | 'dot'>('circle');
+  const [activeTab, setActiveTab] = useState<'circle' | 'symmetry' | 'graph' | 'auxiliary' | 'triangle' | 'vector' | 'addition' | 'dot'>('circle');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // 监听全屏状态变化（以防用户按 Esc 退出全屏后状态不同步）
@@ -64,6 +68,46 @@ function App() {
           单位圆与三角定义
         </button>
         <button
+          id="tab-symmetry-lab"
+          onClick={() => setActiveTab('symmetry')}
+          style={{
+            ...styles.tabButton,
+            ...(activeTab === 'symmetry' ? styles.activeTabButton : {}),
+          }}
+        >
+          诱导公式对称
+        </button>
+        <button
+          id="tab-graph-lab"
+          onClick={() => setActiveTab('graph')}
+          style={{
+            ...styles.tabButton,
+            ...(activeTab === 'graph' ? styles.activeTabButton : {}),
+          }}
+        >
+          函数图像与变换
+        </button>
+        <button
+          id="tab-auxiliary-lab"
+          onClick={() => setActiveTab('auxiliary')}
+          style={{
+            ...styles.tabButton,
+            ...(activeTab === 'auxiliary' ? styles.activeTabButton : {}),
+          }}
+        >
+          辅助角公式
+        </button>
+        <button
+          id="tab-triangle-lab"
+          onClick={() => setActiveTab('triangle')}
+          style={{
+            ...styles.tabButton,
+            ...(activeTab === 'triangle' ? styles.activeTabButton : {}),
+          }}
+        >
+          解三角形
+        </button>
+        <button
           id="tab-vector-lab"
           onClick={() => setActiveTab('vector')}
           style={{
@@ -97,6 +141,10 @@ function App() {
 
       <main style={styles.mainContent}>
         {activeTab === 'circle' && <UnitCircleSlice />}
+        {activeTab === 'symmetry' && <InductionSymmetry />}
+        {activeTab === 'graph' && <TrigFunctionGraph />}
+        {activeTab === 'auxiliary' && <AuxiliaryAngle />}
+        {activeTab === 'triangle' && <SolvingTriangle />}
         {activeTab === 'vector' && <VectorDisplay />}
         {activeTab === 'addition' && <VectorAddition />}
         {activeTab === 'dot' && <VectorDotProduct />}

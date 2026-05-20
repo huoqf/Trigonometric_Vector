@@ -232,11 +232,24 @@
   box-sizing: border-box;
 }
 
+.lab-center-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* 针对大中分辨率显示器/笔记本（宽屏模式） */
 @media (min-width: 960px) {
   .lab-container {
     max-width: 960px; /* 放开宽度限制，最大 960px 宽度 */
     padding: 32px;
+  }
+
+  .lab-container.three-screen {
+    max-width: 1400px; /* 三屏布局需要更宽的空间 */
   }
 
   .lab-layout-grid {
@@ -249,6 +262,13 @@
   .lab-left-panel {
     flex: 0 0 auto;
     width: auto; /* 维持 SVG 正常宽度 */
+  }
+
+  .lab-center-panel {
+    flex: 1 1 auto;
+    min-width: 340px;
+    height: 100%;
+    justify-content: flex-start;
   }
 
   .lab-right-panel {
