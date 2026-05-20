@@ -35,7 +35,7 @@ describe('useMathState — 基础状态结构', () => {
   });
 
   it('Store 中不存在 sin/cos/tan 字段（派生量禁止入 Store）', () => {
-    const state = useMathState.getState() as Record<string, unknown>;
+    const state = useMathState.getState() as unknown as Record<string, unknown>;
     expect(state['sin']).toBeUndefined();
     expect(state['cos']).toBeUndefined();
     expect(state['tan']).toBeUndefined();

@@ -106,124 +106,131 @@ export function UnitCircleSlice() {
     snap.trig.tan === null ? '未定义' : snap.trig.tan.toFixed(4);
 
   return (
-    <div id="unit-circle-slice" style={styles.container}>
-      <h2 style={styles.title}>单位圆 · 最小集成验证</h2>
+    <div id="unit-circle-slice" className="lab-container">
+      <h2 style={styles.title}>单位圆 · 三角定义定义实验室</h2>
 
-      {/* ── SVG 单位圆 ───────────────────────────── */}
-      <svg
-        id="unit-circle-svg"
-        ref={svgRef}
-        width={SVG_SIZE}
-        height={SVG_SIZE}
-        style={styles.svg}
-        viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
-      >
-        {/* 坐标轴 */}
-        <line x1={0} y1={CENTER.y} x2={SVG_SIZE} y2={CENTER.y} style={styles.axis} />
-        <line x1={CENTER.x} y1={0} x2={CENTER.x} y2={SVG_SIZE} style={styles.axis} />
+      <div className="lab-layout-grid">
+        {/* 左侧控制与图形展示面板 */}
+        <div className="lab-left-panel">
+          <svg
+            id="unit-circle-svg"
+            ref={svgRef}
+            width={SVG_SIZE}
+            height={SVG_SIZE}
+            style={styles.svg}
+            viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
+          >
+            {/* 坐标轴 */}
+            <line x1={0} y1={CENTER.y} x2={SVG_SIZE} y2={CENTER.y} style={styles.axis} />
+            <line x1={CENTER.x} y1={0} x2={CENTER.x} y2={SVG_SIZE} style={styles.axis} />
 
-        {/* 单位圆 */}
-        <circle
-          cx={CENTER.x}
-          cy={CENTER.y}
-          r={COORD_PARAMS.unitPx}
-          style={styles.circle}
-        />
+            {/* 单位圆 */}
+            <circle
+              cx={CENTER.x}
+              cy={CENTER.y}
+              r={COORD_PARAMS.unitPx}
+              style={styles.circle}
+            />
 
-        {/* sin 辅助线（竖线，从 x 轴到端点） */}
-        <line
-          id="sin-line"
-          x1={tipScreen.x}
-          y1={CENTER.y}
-          x2={tipScreen.x}
-          y2={tipScreen.y}
-          style={styles.sinLine}
-        />
+            {/* sin 辅助线（竖线，从 x 轴到端点） */}
+            <line
+              id="sin-line"
+              x1={tipScreen.x}
+              y1={CENTER.y}
+              x2={tipScreen.x}
+              y2={tipScreen.y}
+              style={styles.sinLine}
+            />
 
-        {/* cos 辅助线（横线，从 y 轴到端点） */}
-        <line
-          id="cos-line"
-          x1={CENTER.x}
-          y1={tipScreen.y}
-          x2={tipScreen.x}
-          y2={tipScreen.y}
-          style={styles.cosLine}
-        />
+            {/* cos 辅助线（横线，从 y 轴到端点） */}
+            <line
+              id="cos-line"
+              x1={CENTER.x}
+              y1={tipScreen.y}
+              x2={tipScreen.x}
+              y2={tipScreen.y}
+              style={styles.cosLine}
+            />
 
-        {/* 向量（从原点到端点） */}
-        <line
-          id="vector-line"
-          x1={CENTER.x}
-          y1={CENTER.y}
-          x2={tipScreen.x}
-          y2={tipScreen.y}
-          style={styles.vector}
-        />
+            {/* 向量（从原点到端点） */}
+            <line
+              id="vector-line"
+              x1={CENTER.x}
+              y1={CENTER.y}
+              x2={tipScreen.x}
+              y2={tipScreen.y}
+              style={styles.vector}
+            />
 
-        {/* 向量端点 */}
-        <circle
-          id="vector-tip"
-          cx={tipScreen.x}
-          cy={tipScreen.y}
-          r={10}
-          style={{ ...styles.tip, cursor: 'grab' }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        />
+            {/* 向量端点 */}
+            <circle
+              id="vector-tip"
+              cx={tipScreen.x}
+              cy={tipScreen.y}
+              r={10}
+              style={{ ...styles.tip, cursor: 'grab' }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+            />
 
-        {/* sin 投影点（x 轴上） */}
-        <circle cx={sinScreen.x} cy={CENTER.y} r={4} style={styles.sinDot} />
+            {/* sin 投影点（x 轴上） */}
+            <circle cx={sinScreen.x} cy={CENTER.y} r={4} style={styles.sinDot} />
 
-        {/* cos 投影点（y 轴上） */}
-        <circle cx={CENTER.x} cy={cosScreen.y} r={4} style={styles.cosDot} />
+            {/* cos 投影点（y 轴上） */}
+            <circle cx={CENTER.x} cy={cosScreen.y} r={4} style={styles.cosDot} />
 
-        {/* 角度标注 */}
-        <text x={CENTER.x + 18} y={CENTER.y - 8} style={styles.label}>
-          θ = {radToDeg(angleRad).toFixed(1)}°
-        </text>
-      </svg>
+            {/* 角度标注 */}
+            <text x={CENTER.x + 18} y={CENTER.y - 8} style={styles.label}>
+              θ = {radToDeg(angleRad).toFixed(1)}°
+            </text>
+          </svg>
 
-      {/* ── 控制区（唯一的数据写入入口） ─────────── */}
-      <div style={styles.controls}>
-        <label htmlFor="angle-slider" style={styles.controlLabel}>
-          角度 θ（度）
-        </label>
-        <div style={styles.sliderRow}>
-          <input
-            id="angle-slider"
-            type="range"
-            min={0}
-            max={360}
-            step={1}
-            value={Math.round(radToDeg(angleRad))}
-            onChange={handleSliderChange}
-            style={styles.slider}
-          />
-          <input
-            id="angle-input"
-            type="number"
-            min={0}
-            max={360}
-            step={1}
-            value={radToDeg(angleRad).toFixed(1)}
-            onChange={handleInputChange}
-            style={styles.numberInput}
-          />
+          {/* ── 控制区（唯一的数据写入入口） ─────────── */}
+          <div style={styles.controls}>
+            <label htmlFor="angle-slider" style={styles.controlLabel}>
+              角度 θ（度）
+            </label>
+            <div style={styles.sliderRow}>
+              <input
+                id="angle-slider"
+                type="range"
+                min={0}
+                max={360}
+                step={1}
+                value={Math.round(radToDeg(angleRad))}
+                onChange={handleSliderChange}
+                style={styles.slider}
+              />
+              <input
+                id="angle-input"
+                type="number"
+                min={0}
+                max={360}
+                step={1}
+                value={radToDeg(angleRad).toFixed(1)}
+                onChange={handleInputChange}
+                style={styles.numberInput}
+              />
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* ── 派生值只读展示 ────────────────────────── */}
-      <div style={styles.readonlyGrid}>
-        <ReadonlyRow id="display-sin" label="sin θ" value={snap.trig.sin.toFixed(6)} color="#4ade80" />
-        <ReadonlyRow id="display-cos" label="cos θ" value={snap.trig.cos.toFixed(6)} color="#60a5fa" />
-        <ReadonlyRow id="display-tan" label="tan θ" value={tanDisplay} color="#f59e0b" />
-        <ReadonlyRow id="display-x" label="x（向量）" value={snap.vector.tip.x.toFixed(6)} color="#a78bfa" />
-        <ReadonlyRow id="display-y" label="y（向量）" value={snap.vector.tip.y.toFixed(6)} color="#f472b6" />
+        {/* 右侧数据分析面板 */}
+        <div className="lab-right-panel" style={{ justifyContent: 'center' }}>
+          <div style={styles.readonlyGrid}>
+            <ReadonlyRow id="display-sin" label="sin θ (对边/斜边)" value={snap.trig.sin.toFixed(6)} color="#4ade80" />
+            <ReadonlyRow id="display-cos" label="cos θ (邻边/斜边)" value={snap.trig.cos.toFixed(6)} color="#60a5fa" />
+            <ReadonlyRow id="display-tan" label="tan θ (对边/邻边)" value={tanDisplay} color="#f59e0b" />
+            <ReadonlyRow id="display-x" label="x 轴分量" value={snap.vector.tip.x.toFixed(6)} color="#a78bfa" />
+            <ReadonlyRow id="display-y" label="y 轴分量" value={snap.vector.tip.y.toFixed(6)} color="#f472b6" />
+          </div>
+        </div>
       </div>
     </div>
   );
+
 }
 
 // ─── 只读值展示子组件 ──────────────────────────────────────
