@@ -62,6 +62,8 @@ export function ExamTraining() {
     currentIndex,
     records,
     isFinished,
+    mode,
+    wrongQuestionIds,
     startSession,
     submitAnswer,
     nextQuestion,
@@ -69,6 +71,9 @@ export function ExamTraining() {
     useHint,
     viewExplanation,
     resetSession,
+    startReviewSession,
+    toggleWrongQuestion,
+    clearWrongQuestions,
   } = useExamStore();
 
   const [selectedTags, setSelectedTags] = useState<KnowledgeTag[]>([]);
@@ -121,6 +126,41 @@ export function ExamTraining() {
           >
             开始练习 →
           </button>
+
+          {/* 错题本集成面板 */}
+          <div style={s.wrongStatsContainer}>
+            <div style={s.wrongStatBox}>
+              <span style={s.wrongStatTitle}>📚 我的错题本</span>
+              <span style={s.wrongStatCount}>
+                {wrongQuestionIds.length}{' '}
+                <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal' }}>道错题</span>
+              </span>
+            </div>
+            <div style={s.wrongActionRow}>
+              <button
+                disabled={wrongQuestionIds.length === 0}
+                style={{
+                  ...s.reviewBtn,
+                  ...(wrongQuestionIds.length === 0 ? s.reviewBtnDisabled : {}),
+                }}
+                onClick={() => startReviewSession()}
+              >
+                🔥 错题专项复盘
+              </button>
+              {wrongQuestionIds.length > 0 && (
+                <button
+                  style={s.clearWrongsBtn}
+                  onClick={() => {
+                    if (window.confirm('确定要清空错题本吗？此操作不可恢复。')) {
+                      clearWrongQuestions();
+                    }
+                  }}
+                >
+                  🗑️ 清空错题本
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -130,18 +170,47 @@ export function ExamTraining() {
   if (isFinished) {
     const total = questionIds.length;
     const pct = total > 0 ? Math.round((score.correct / total) * 100) : 0;
+
+    // 统计本次练习答错的题数
+    const sessionWrongsCount = questionIds.filter((id) => {
+      const rec = records[id];
+      return rec && rec.isCorrect === false;
+    }).length;
+
     return (
       <div style={s.wrapper}>
         <div style={s.resultCard}>
           <div style={s.resultEmoji}>{pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '💪'}</div>
-          <h2 style={s.resultTitle}>练习完成！</h2>
+          <h2 style={s.resultTitle}>{mode === 'review' ? '复盘练习完成！' : '练习完成！'}</h2>
           <p style={s.resultScore}>
             {total} 题 · 答对 <span style={{ color: '#6366f1', fontWeight: 700 }}>{score.correct}</span> 题 · 正确率{' '}
             <span style={{ color: pct >= 80 ? '#22c55e' : '#f59e0b', fontWeight: 700 }}>{pct}%</span>
           </p>
-          <button style={s.startBtn} onClick={resetSession}>
-            重新开始
-          </button>
+
+          {mode !== 'review' && sessionWrongsCount > 0 && (
+            <div style={s.resultWrongNotice}>
+              ⚠️ 本次练习有 <span style={{ color: '#ef4444', fontWeight: 700 }}>{sessionWrongsCount}</span> 道题答错，已自动记入错题本。
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+            {wrongQuestionIds.length > 0 && (
+              <button
+                style={{ ...s.startBtn, background: 'linear-gradient(135deg, #b91c1c, #dc2626)' }}
+                onClick={() => {
+                  startReviewSession();
+                }}
+              >
+                🔥 立即开始错题复盘 ({wrongQuestionIds.length})
+              </button>
+            )}
+            <button
+              style={{ ...s.startBtn, backgroundColor: '#1e293b', backgroundImage: 'none', border: '1px solid #334155', color: '#94a3b8' }}
+              onClick={resetSession}
+            >
+              返回主菜单
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -151,7 +220,6 @@ export function ExamTraining() {
   if (!currentQ || !currentRec) return null;
 
   const answered = currentRec.userAnswer !== null;
-  const showHint = currentRec.hintsUsed > 0;
   const showExplanation = currentRec.explanationViewed;
 
   return (
@@ -203,6 +271,9 @@ export function ExamTraining() {
         <div style={s.card}>
           {/* 题目头部 */}
           <div style={s.qHeader}>
+            {mode === 'review' && (
+              <span style={s.reviewBadge}>🔥 错题复盘</span>
+            )}
             <span style={s.qIndex}>第 {currentIndex + 1} / {questionIds.length} 题</span>
             <span
               style={{
@@ -220,6 +291,18 @@ export function ExamTraining() {
                 </span>
               ))}
             </div>
+
+            {/* 手动加入/移出错题本按钮 */}
+            <button
+              onClick={() => toggleWrongQuestion(currentQ.id)}
+              style={{
+                ...s.favBtn,
+                color: wrongQuestionIds.includes(currentQ.id) ? '#fbbf24' : '#64748b',
+              }}
+              title={wrongQuestionIds.includes(currentQ.id) ? "从错题本移出" : "存入错题本"}
+            >
+              {wrongQuestionIds.includes(currentQ.id) ? '★ 已记录错题' : '☆ 记录错题'}
+            </button>
           </div>
 
           {/* 题目正文 */}
@@ -254,14 +337,43 @@ export function ExamTraining() {
             })}
           </div>
 
-          {/* 提示区 */}
-          {showHint && (
-            <div style={s.hintBox}>
-              {currentQ.hints.slice(0, currentRec.hintsUsed).map((h, i) => (
-                <p key={i} style={s.hintLine}>
-                  💡 提示 {i + 1}：<MathText text={h} />
-                </p>
-              ))}
+          {/* 渐进式提示面板 */}
+          {currentQ.hints.length > 0 && (
+            <div style={s.hintPanel}>
+              <div style={s.hintPanelHeader}>
+                <span style={s.hintPanelTitle}>💡 渐进式解题提示</span>
+                <span style={s.hintPanelCount}>
+                  已解锁 {currentRec.hintsUsed} / {currentQ.hints.length}
+                </span>
+              </div>
+              <div style={s.hintList}>
+                {currentQ.hints.map((hint, idx) => {
+                  const isUnlocked = idx < currentRec.hintsUsed;
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        ...s.hintCard,
+                        ...(isUnlocked ? s.hintCardUnlocked : s.hintCardLocked),
+                      }}
+                    >
+                      <div style={s.hintCardHeader}>
+                        <span style={s.hintCardLabel}>提示 {idx + 1}</span>
+                        <span>{isUnlocked ? '🔓 已解锁' : '🔒 未解锁'}</span>
+                      </div>
+                      {isUnlocked ? (
+                        <p style={s.hintCardText}>
+                          <MathText text={hint} />
+                        </p>
+                      ) : (
+                        <p style={s.hintCardTextLocked}>
+                          需要提示？请在下方点击“获取提示”解锁
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -505,4 +617,168 @@ const s: Record<string, React.CSSProperties> = {
   resultEmoji: { fontSize: '56px', marginBottom: '16px' },
   resultTitle: { fontSize: '24px', fontWeight: 800, color: '#f1f5f9', margin: '0 0 12px' },
   resultScore: { fontSize: '16px', color: '#94a3b8', marginBottom: '28px' },
+  // 错题本相关样式
+  wrongStatsContainer: {
+    marginTop: '24px',
+    padding: '20px',
+    background: '#1a1013', // 深红色偏黑背景
+    borderRadius: '14px',
+    border: '1px solid #7f1d1d33',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+    alignItems: 'center',
+  },
+  wrongStatBox: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    width: '100%',
+    alignItems: 'center',
+    borderBottom: '1px solid #7f1d1d22',
+    paddingBottom: '10px',
+  },
+  wrongStatTitle: {
+    fontSize: '14px',
+    fontWeight: 700,
+    color: '#fca5a5',
+  },
+  wrongStatCount: {
+    fontSize: '24px',
+    fontWeight: 800,
+    color: '#ef4444',
+  },
+  wrongActionRow: {
+    display: 'flex',
+    gap: '10px',
+    width: '100%',
+  },
+  reviewBtn: {
+    flex: 1,
+    padding: '10px 16px',
+    borderRadius: '8px',
+    background: 'linear-gradient(135deg, #b91c1c, #dc2626)',
+    color: '#fff',
+    fontSize: '14px',
+    fontWeight: 700,
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  reviewBtnDisabled: {
+    background: '#1e293b',
+    color: '#475569',
+    cursor: 'not-allowed',
+    border: '1px solid #334155',
+  },
+  clearWrongsBtn: {
+    padding: '10px 14px',
+    borderRadius: '8px',
+    background: '#1e293b',
+    border: '1px solid #ef444433',
+    color: '#f87171',
+    fontSize: '13px',
+    cursor: 'pointer',
+  },
+  reviewBadge: {
+    fontSize: '11px',
+    padding: '2px 8px',
+    borderRadius: '99px',
+    backgroundColor: '#b91c1c22',
+    color: '#f87171',
+    fontWeight: 700,
+    border: '1px solid #b91c1c44',
+  },
+  favBtn: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    marginLeft: 'auto',
+    padding: '4px 8px',
+    borderRadius: '6px',
+    transition: 'all 0.2s',
+  },
+  hintPanel: {
+    background: '#0b0f19',
+    borderRadius: '12px',
+    padding: '18px',
+    border: '1px solid #1e293b',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  hintPanelHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottom: '1px solid #1e293b',
+    paddingBottom: '8px',
+  },
+  hintPanelTitle: {
+    fontSize: '14px',
+    fontWeight: 700,
+    color: '#fbbf24',
+  },
+  hintPanelCount: {
+    fontSize: '12px',
+    color: '#64748b',
+  },
+  hintList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  hintCard: {
+    borderRadius: '8px',
+    padding: '12px 14px',
+    border: '1px solid transparent',
+    transition: 'all 0.2s ease',
+  },
+  hintCardUnlocked: {
+    background: '#1e293b55',
+    borderColor: '#d9770633',
+  },
+  hintCardLocked: {
+    background: '#0f172a33',
+    borderColor: '#33415533',
+    borderStyle: 'dashed',
+  },
+  hintCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: '12px',
+    color: '#64748b',
+    marginBottom: '6px',
+  },
+  hintCardLabel: {
+    fontWeight: 700,
+    color: '#d97706',
+  },
+  hintCardText: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#cbd5e1',
+    lineHeight: '1.6',
+  },
+  hintCardTextLocked: {
+    margin: 0,
+    fontSize: '13px',
+    color: '#475569',
+    fontStyle: 'italic',
+  },
+  resultWrongNotice: {
+    background: '#7f1d1d22',
+    border: '1px solid #b91c1c44',
+    borderRadius: '10px',
+    padding: '12px',
+    fontSize: '14px',
+    color: '#fca5a5',
+    margin: '10px 0 20px',
+    lineHeight: '1.5',
+  },
 };

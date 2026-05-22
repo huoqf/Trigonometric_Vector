@@ -35,7 +35,7 @@ export interface TrigGraphState {
   readonly omega: number;
   readonly phi: number;
   readonly b: number;
-  readonly funcType: 'sin' | 'cos';
+  readonly funcType: 'sin' | 'cos' | 'tan';
 }
 
 /** useMathState Store 允许持有的最小真值集合 */

@@ -44,23 +44,43 @@ export function TrigFunctionGraph() {
 
   // 生成波形路径
   const pathD = useMemo(() => {
-    const points: Vector2[] = [];
+    const pathSegments: string[] = [];
+    let currentSegment: Vector2[] = [];
     // 覆盖整个画布的数学 X 域：
     const xMin = -CONTAINER_WIDTH / 2 / UNIT_PX;
     const xMax = CONTAINER_WIDTH / 2 / UNIT_PX;
     const step = 0.05; // 采样步长
 
+    let prevY: number | null = null;
+
     for (let x = xMin; x <= xMax; x += step) {
-      const y = funcType === 'sin' 
-        ? A * Math.sin(omega * x + phi) + b 
-        : A * Math.cos(omega * x + phi) + b;
+      let y: number;
+      if (funcType === 'sin') {
+        y = A * Math.sin(omega * x + phi) + b;
+      } else if (funcType === 'cos') {
+        y = A * Math.cos(omega * x + phi) + b;
+      } else {
+        y = A * Math.tan(omega * x + phi) + b;
+      }
       
+      // 处理 tan 渐近线导致的剧烈跳变
+      if (funcType === 'tan' && prevY !== null && Math.abs(y - prevY) > 10) {
+        if (currentSegment.length > 0) {
+          pathSegments.push('M ' + currentSegment.map((p) => `${p.x},${p.y}`).join(' L '));
+          currentSegment = [];
+        }
+      }
+
       const screenPt = mathToScreen({ x, y }, { width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT, unitPx: UNIT_PX });
-      points.push(screenPt);
+      currentSegment.push(screenPt);
+      prevY = y;
     }
 
-    if (points.length === 0) return '';
-    return 'M ' + points.map((p) => `${p.x},${p.y}`).join(' L ');
+    if (currentSegment.length > 0) {
+      pathSegments.push('M ' + currentSegment.map((p) => `${p.x},${p.y}`).join(' L '));
+    }
+
+    return pathSegments.join(' ');
   }, [A, omega, phi, b, funcType]);
 
   // 生成坐标系轴线与网格线
@@ -115,7 +135,7 @@ export function TrigFunctionGraph() {
     return lines;
   }, []);
 
-  const period = omega === 0 ? '\\infty' : Math.abs((2 * PI) / omega).toFixed(2);
+  const period = omega === 0 ? '\\infty' : Math.abs((funcType === 'tan' ? PI : 2 * PI) / omega).toFixed(2);
   const formattedPhi = formatAnglePi(phi);
 
   const leftPanel = (
@@ -127,11 +147,12 @@ export function TrigFunctionGraph() {
           <span>函数类型</span>
           <select 
             value={funcType} 
-            onChange={(e) => updateParam('funcType', e.target.value as 'sin' | 'cos')}
+            onChange={(e) => updateParam('funcType', e.target.value as 'sin' | 'cos' | 'tan')}
             style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', padding: '2px 8px' }}
           >
             <option value="sin">y = sin(x)</option>
             <option value="cos">y = cos(x)</option>
+            <option value="tan">y = tan(x)</option>
           </select>
         </label>
       </div>
@@ -206,11 +227,11 @@ export function TrigFunctionGraph() {
           </li>
           <li style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>最大值 y_max</span>
-            <span style={{ color: '#fb923c', fontWeight: 'bold' }}>{(b + Math.abs(A)).toFixed(1)}</span>
+            <span style={{ color: '#fb923c', fontWeight: 'bold' }}>{funcType === 'tan' ? '无' : (b + Math.abs(A)).toFixed(1)}</span>
           </li>
           <li style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>最小值 y_min</span>
-            <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{(b - Math.abs(A)).toFixed(1)}</span>
+            <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{funcType === 'tan' ? '无' : (b - Math.abs(A)).toFixed(1)}</span>
           </li>
         </ul>
       </div>

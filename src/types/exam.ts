@@ -79,4 +79,6 @@ export interface ExamSession {
   readonly records: Readonly<Record<string, QuestionRecord>>;
   /** 是否已完成全部作答 */
   readonly isFinished: boolean;
+  /** 练习模式：normal=普通练习，review=错题复盘 */
+  readonly mode: 'normal' | 'review';
 }
