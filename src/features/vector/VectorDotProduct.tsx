@@ -7,6 +7,8 @@ import { useState, useMemo, useRef } from 'react';
 import { mathToScreen, screenToMath, containerCenter } from '@/utils/coordinate';
 import { dot, magnitude, vectorToAngle, normalize, scale } from '@/math/vector';
 import { radToDeg } from '@/math/trigonometry';
+import { InlineMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
 import type { Vector2 } from '@/types/math';
 
 // ─── SVG 几何区参数 ────────────────────────────────────────
@@ -332,17 +334,19 @@ export function VectorDotProduct() {
         {/* 右侧：仪表数据分析看板 */}
         <div className="lab-right-panel" style={{ justifyContent: 'center' }}>
           <div style={styles.dashboard}>
-            {/* 点积计算式 */}
             <div style={styles.formulaBox}>
               <div style={styles.formulaTitle}>点积公式多维对比计算：</div>
-              <div style={styles.formulaText}>
-                <span style={{ color: '#c084fc' }}>代数法</span>：a·b = x₁x₂ + y₁y₂ = ({a.x.toFixed(2)})·({b.x.toFixed(2)}) + ({a.y.toFixed(2)})·({b.y.toFixed(2)}) = <span style={{ color: '#fb923c', fontWeight: 'bold' }}>{dotVal.toFixed(4)}</span>
+              <div style={{ ...styles.formulaText, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px', margin: '4px 0' }}>
+                <span style={{ color: '#c084fc', fontWeight: 'bold' }}>代数法</span>：
+                <InlineMath math={`\\vec{a} \\cdot \\vec{b} = x_1 x_2 + y_1 y_2 = (${a.x.toFixed(2)}) \\cdot (${b.x.toFixed(2)}) + (${a.y.toFixed(2)}) \\cdot (${b.y.toFixed(2)}) = ${dotVal.toFixed(3)}`} />
               </div>
-              <div style={styles.formulaText}>
-                <span style={{ color: '#60a5fa' }}>几何法</span>：a·b = |a||b|cosθ = ({lenA.toFixed(2)})·({lenB.toFixed(2)})·cos({dirAngleDeg.toFixed(1)}°) = <span style={{ color: '#fb923c', fontWeight: 'bold' }}>{dotVal.toFixed(4)}</span>
+              <div style={{ ...styles.formulaText, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px', margin: '4px 0' }}>
+                <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>几何法</span>：
+                <InlineMath math={`\\vec{a} \\cdot \\vec{b} = |\\vec{a}| |\\vec{b}| \\cos \\theta = ${lenA.toFixed(2)} \\cdot ${lenB.toFixed(2)} \\cdot \\cos(${dirAngleDeg.toFixed(1)}^\\circ) = ${dotVal.toFixed(3)}`} />
               </div>
-              <div style={styles.formulaText}>
-                <span style={{ color: '#4ade80' }}>投影法</span>：a·b = |a|·(b在a上投影) = {lenA.toFixed(2)}·({(dotVal / (lenA || 1)).toFixed(2)}) = <span style={{ color: '#fb923c', fontWeight: 'bold' }}>{dotVal.toFixed(4)}</span>
+              <div style={{ ...styles.formulaText, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px', margin: '4px 0' }}>
+                <span style={{ color: '#4ade80', fontWeight: 'bold' }}>投影法</span>：
+                <InlineMath math={`\\vec{a} \\cdot \\vec{b} = |\\vec{a}| \\cdot \\text{Proj}_{\\vec{a}} \\vec{b} = ${lenA.toFixed(2)} \\cdot (${(dotVal / (lenA || 1)).toFixed(2)}) = ${dotVal.toFixed(3)}`} />
               </div>
             </div>
           </div>

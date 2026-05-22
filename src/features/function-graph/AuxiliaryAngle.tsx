@@ -1,7 +1,7 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { ThreeScreenLayout } from '@/components/common/ThreeScreenLayout';
 import { mathToScreen, screenToMath } from '@/utils/coordinate';
-import { BlockMath, InlineMath } from 'react-katex';
+import { BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import type { Vector2 } from '@/types/math';
 
@@ -10,30 +10,6 @@ const CONTAINER_WIDTH = 600;
 const CONTAINER_HEIGHT = 400;
 const UNIT_PX = 30; // 1个数学单位 = 30px。X 轴半宽约 10 个单位 (约 3π)
 
-// 辅助函数：将小数近似转为带 π 的分数格式展示
-function formatAnglePi(val: number): string {
-  if (Math.abs(val) < 0.01) return '0';
-  const fractions = [
-    { v: PI, s: '\\pi' },
-    { v: PI / 2, s: '\\frac{\\pi}{2}' },
-    { v: PI / 3, s: '\\frac{\\pi}{3}' },
-    { v: PI / 4, s: '\\frac{\\pi}{4}' },
-    { v: PI / 6, s: '\\frac{\\pi}{6}' },
-    { v: PI / 12, s: '\\frac{\\pi}{12}' },
-  ];
-  const sign = val < 0 ? '-' : '';
-  const absVal = Math.abs(val);
-
-  for (const { v, s } of fractions) {
-    const ratio = absVal / v;
-    const rounded = Math.round(ratio);
-    if (Math.abs(ratio - rounded) < 0.01) {
-      if (rounded === 1) return sign + s;
-      return sign + `${rounded}${s}`;
-    }
-  }
-  return val.toFixed(2);
-}
 
 export function AuxiliaryAngle() {
   // A 是 sin(x) 的振幅，B 是 cos(x) 的振幅

@@ -12,10 +12,12 @@ import { VectorDotProduct } from '@/features/vector/VectorDotProduct';
 import { TrigFunctionGraph } from '@/features/function-graph/TrigFunctionGraph';
 import { AuxiliaryAngle } from '@/features/function-graph/AuxiliaryAngle';
 import { SolvingTriangle } from '@/features/function-graph/SolvingTriangle';
+import { BenzTheorem } from '@/features/vector/BenzTheorem';
+import { ExamTraining } from '@/features/exam_training/ExamTraining';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'circle' | 'symmetry' | 'graph' | 'auxiliary' | 'triangle' | 'vector' | 'addition' | 'dot'>('circle');
+  const [activeTab, setActiveTab] = useState<'circle' | 'symmetry' | 'graph' | 'auxiliary' | 'triangle' | 'vector' | 'addition' | 'dot' | 'benz' | 'exam'>('circle');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // 监听全屏状态变化（以防用户按 Esc 退出全屏后状态不同步）
@@ -56,86 +58,76 @@ function App() {
         <p style={styles.brandSubtitle}>高中数学三角函数与平面向量交互学习系统</p>
       </header>
 
-      <nav style={styles.tabContainer}>
+      <nav className="lab-tab-container">
         <button
           id="tab-circle-lab"
           onClick={() => setActiveTab('circle')}
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'circle' ? styles.activeTabButton : {}),
-          }}
+          className={`lab-tab-button ${activeTab === 'circle' ? 'active' : ''}`}
         >
           单位圆与三角定义
         </button>
         <button
           id="tab-symmetry-lab"
           onClick={() => setActiveTab('symmetry')}
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'symmetry' ? styles.activeTabButton : {}),
-          }}
+          className={`lab-tab-button ${activeTab === 'symmetry' ? 'active' : ''}`}
         >
           诱导公式对称
         </button>
         <button
           id="tab-graph-lab"
           onClick={() => setActiveTab('graph')}
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'graph' ? styles.activeTabButton : {}),
-          }}
+          className={`lab-tab-button ${activeTab === 'graph' ? 'active' : ''}`}
         >
           函数图像与变换
         </button>
         <button
           id="tab-auxiliary-lab"
           onClick={() => setActiveTab('auxiliary')}
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'auxiliary' ? styles.activeTabButton : {}),
-          }}
+          className={`lab-tab-button ${activeTab === 'auxiliary' ? 'active' : ''}`}
         >
           辅助角公式
         </button>
         <button
           id="tab-triangle-lab"
           onClick={() => setActiveTab('triangle')}
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'triangle' ? styles.activeTabButton : {}),
-          }}
+          className={`lab-tab-button ${activeTab === 'triangle' ? 'active' : ''}`}
         >
           解三角形
         </button>
         <button
           id="tab-vector-lab"
           onClick={() => setActiveTab('vector')}
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'vector' ? styles.activeTabButton : {}),
-          }}
+          className={`lab-tab-button ${activeTab === 'vector' ? 'active' : ''}`}
         >
           平面向量交互
         </button>
         <button
           id="tab-addition-lab"
           onClick={() => setActiveTab('addition')}
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'addition' ? styles.activeTabButton : {}),
-          }}
+          className={`lab-tab-button ${activeTab === 'addition' ? 'active' : ''}`}
         >
           向量加法法则
         </button>
         <button
           id="tab-dot-lab"
           onClick={() => setActiveTab('dot')}
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'dot' ? styles.activeTabButton : {}),
-          }}
+          className={`lab-tab-button ${activeTab === 'dot' ? 'active' : ''}`}
         >
           点积与投影实验
+        </button>
+        <button
+          id="tab-benz-lab"
+          onClick={() => setActiveTab('benz')}
+          className={`lab-tab-button ${activeTab === 'benz' ? 'active' : ''}`}
+        >
+          奔驰定理
+        </button>
+        <button
+          id="tab-exam-lab"
+          onClick={() => setActiveTab('exam')}
+          className={`lab-tab-button ${activeTab === 'exam' ? 'active' : ''}`}
+        >
+          📝 真题训练
         </button>
       </nav>
 
@@ -148,6 +140,8 @@ function App() {
         {activeTab === 'vector' && <VectorDisplay />}
         {activeTab === 'addition' && <VectorAddition />}
         {activeTab === 'dot' && <VectorDotProduct />}
+        {activeTab === 'benz' && <BenzTheorem />}
+        {activeTab === 'exam' && <ExamTraining />}
       </main>
 
       <footer style={styles.footer}>
@@ -206,33 +200,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '13px',
     color: '#64748b',
     margin: '6px 0 0 0',
-  },
-  tabContainer: {
-    display: 'flex',
-    gap: '6px',
-    backgroundColor: '#1e293b',
-    padding: '4px',
-    borderRadius: '8px',
-    marginBottom: '28px',
-    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
-    border: '1px solid #334155',
-  },
-  tabButton: {
-    backgroundColor: 'transparent',
-    color: '#94a3b8',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    outline: 'none',
-  },
-  activeTabButton: {
-    backgroundColor: '#6366f1',
-    color: '#ffffff',
-    boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
   },
   mainContent: {
     flex: 1,

@@ -190,7 +190,7 @@ export function SolvingTriangle() {
   }, [geom]);
 
   // 指针拖拽事件处理
-  const handlePointerDown = (vertex: 'A' | 'B' | 'C', e: React.PointerEvent<SVGCIRCLEElement>) => {
+  const handlePointerDown = (vertex: 'A' | 'B' | 'C', e: React.PointerEvent<SVGCircleElement>) => {
     e.stopPropagation();
     setDraggedVertex(vertex);
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -228,7 +228,7 @@ export function SolvingTriangle() {
     }
   };
 
-  const handlePointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+  const handlePointerUp = () => {
     if (!draggedVertex) return;
     setDraggedVertex(null);
   };
