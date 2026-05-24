@@ -14,10 +14,12 @@ import { AuxiliaryAngle } from '@/features/function-graph/AuxiliaryAngle';
 import { SolvingTriangle } from '@/features/function-graph/SolvingTriangle';
 import { BenzTheorem } from '@/features/vector/BenzTheorem';
 import { ExamTraining } from '@/features/exam_training/ExamTraining';
+import { SumDifference } from '@/features/trig-identity/SumDifference';
+import { DoubleAnglePowerReduction } from '@/features/trig-identity/DoubleAnglePowerReduction';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'circle' | 'symmetry' | 'graph' | 'auxiliary' | 'triangle' | 'vector' | 'addition' | 'dot' | 'benz' | 'exam'>('circle');
+  const [activeTab, setActiveTab] = useState<'circle' | 'symmetry' | 'graph' | 'auxiliary' | 'triangle' | 'vector' | 'addition' | 'dot' | 'benz' | 'sum-diff' | 'double-reduce' | 'exam'>('circle');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // 监听全屏状态变化（以防用户按 Esc 退出全屏后状态不同步）
@@ -123,6 +125,20 @@ function App() {
           奔驰定理
         </button>
         <button
+          id="tab-sum-diff-lab"
+          onClick={() => setActiveTab('sum-diff')}
+          className={`lab-tab-button ${activeTab === 'sum-diff' ? 'active' : ''}`}
+        >
+          两角和差
+        </button>
+        <button
+          id="tab-double-reduce-lab"
+          onClick={() => setActiveTab('double-reduce')}
+          className={`lab-tab-button ${activeTab === 'double-reduce' ? 'active' : ''}`}
+        >
+          二倍角与降次
+        </button>
+        <button
           id="tab-exam-lab"
           onClick={() => setActiveTab('exam')}
           className={`lab-tab-button ${activeTab === 'exam' ? 'active' : ''}`}
@@ -141,6 +157,8 @@ function App() {
         {activeTab === 'addition' && <VectorAddition />}
         {activeTab === 'dot' && <VectorDotProduct />}
         {activeTab === 'benz' && <BenzTheorem />}
+        {activeTab === 'sum-diff' && <SumDifference />}
+        {activeTab === 'double-reduce' && <DoubleAnglePowerReduction />}
         {activeTab === 'exam' && <ExamTraining />}
       </main>
 

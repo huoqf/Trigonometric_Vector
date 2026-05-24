@@ -63,6 +63,7 @@ const INITIAL_GRAPH_PARAMS = {
 export const useMathState = create<MathStore>()((set) => ({
   // ── 基础状态（真值基底） ──────────────────────
   angleRad: INITIAL_ANGLE_RAD,
+  angleRad2: INITIAL_ANGLE_RAD,
   radius: INITIAL_RADIUS,
   graphParams: INITIAL_GRAPH_PARAMS,
   isAnimating: false,
@@ -77,6 +78,13 @@ export const useMathState = create<MathStore>()((set) => ({
    */
   setAngle(rad: number) {
     set({ angleRad: normalizeAngle(rad) });
+  },
+
+  /**
+   * 设置第二个角度。
+   */
+  setAngle2(rad: number) {
+    set({ angleRad2: normalizeAngle(rad) });
   },
 
   /**
@@ -103,6 +111,7 @@ export const useMathState = create<MathStore>()((set) => ({
   reset() {
     set({
       angleRad: INITIAL_ANGLE_RAD,
+      angleRad2: INITIAL_ANGLE_RAD,
       radius: INITIAL_RADIUS,
       graphParams: INITIAL_GRAPH_PARAMS,
       isAnimating: false,

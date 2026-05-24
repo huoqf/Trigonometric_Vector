@@ -43,6 +43,9 @@ export interface MathBaseState {
   /** 当前角度，弧度制，规范化区间 [0, 2π) */
   readonly angleRad: number;
 
+  /** 第二个角度，用于双角实验（如两角和差），弧度制，规范化区间 [0, 2π) */
+  readonly angleRad2: number;
+
   /** 向量模长（单位长度 = 1，对应标准单位圆） */
   readonly radius: number;
 
@@ -97,6 +100,9 @@ export interface MathActions {
    * 实现层负责将输入规范化到 [0, 2π)，调用方无需预处理。
    */
   setAngle(rad: number): void;
+
+  /** 设置第二个角度（弧度）。规范化区间 [0, 2π) */
+  setAngle2(rad: number): void;
 
   /** 设置向量模长（必须为正数，否则忽略） */
   setRadius(r: number): void;
