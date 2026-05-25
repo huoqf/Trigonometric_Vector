@@ -120,9 +120,9 @@
 
 #### 阶段 1 — 专题 1-3（SVG 等轴测，概念层）
 
-- [ ] **1. 空间向量的基础概念与线性运算**
-  - 计划新建 `src/features/space-vector/SpaceVectorBasic.tsx`
-  - 等轴测 SVG 演示：向量加减（平行四边形法则三维版）、数乘、共线条件判定
+- [x] **1. 空间向量的基础概念与线性运算**
+  - 已完成：新建 `src/features/space-vector/SpaceVectorBasic.tsx`
+  - 实现了基于等轴测投影的 SVG 交互演示，支持空间向量的三维加法（平行四边形法则）、减法、标量乘法以及共线判定。通过 ThreeScreenLayout 左中右面板，实现控制台拖拽、中央等轴测图像渲染与右侧代数指标闭环联动。
 - [ ] **2. 空间向量的坐标表示与运算（代数工具）**
   - 计划新建 `src/features/space-vector/SpaceVectorCoord.tsx`
   - 三个坐标输入框联动三维箭头显示，实时演算看板展示模长、方向余弦、点积结果
