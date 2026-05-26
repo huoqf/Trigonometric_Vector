@@ -7,22 +7,25 @@
  *   - OrbitControls 旋转/缩放/平移
  *   - 关键点、棱、法向量可视化
  *   - 右侧分步演算看板（向量公式验证）
+ *   - 立体几何题库 + 苏格拉底分步提示面板（题目模式）
  */
 
 import { useRef, useState, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Line, Text, Sphere, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import * as THREE from 'three';
-import { cross3, dot3, magnitude3, normalize3, sub3, planeNormal, pointToPlaneDistance } from '@/math/vector3';
+import { dot3, magnitude3, normalize3, sub3, planeNormal, pointToPlaneDistance, cross3 } from '@/math/vector3';
 import type { Vector3 as Vec3 } from '@/types/vector3';
 
 // ─── 类型 ─────────────────────────────────────────────
 type ShapeType = 'pyramid4' | 'pyramid3' | 'cuboid';
+type AppMode = 'explore' | 'problem';
 
 // ─── 工具 ─────────────────────────────────────────────
 const fN = (n: number, d = 3) => n.toFixed(d);
 const fmt = (v: Vec3, d = 2) => `(${v.x.toFixed(d)}, ${v.y.toFixed(d)}, ${v.z.toFixed(d)})`;
 const toTHREE = (v: Vec3) => new THREE.Vector3(v.x, v.y, v.z);
+const deg = (rad: number) => (rad * 180 / Math.PI).toFixed(2);
 
 // ─── 几何体顶点定义 ────────────────────────────────────
 function getPyramid4Verts(a = 2, h = 3): Vec3[] {
@@ -79,6 +82,216 @@ const CUBOID_EDGES = [
 const PYRAMID4_LABELS = ['A','B','C','D','P'];
 const PYRAMID3_LABELS = ['A','B','C','P'];
 const CUBOID_LABELS   = ['A','B','C','D','E','F','G','H'];
+
+// ─── 题库类型 ─────────────────────────────────────────
+interface ProblemStep {
+  hint: string;       // 苏格拉底式引导提示
+  solution: string;   // 完整计算步骤/答案
+  formula?: string;   // 核心公式（可选）
+}
+
+interface Problem {
+  id: string;
+  shape: ShapeType;
+  highlightFace: number;
+  title: string;
+  statement: string;   // 题干
+  steps: ProblemStep[];
+  answer: string;      // 最终答案
+}
+
+// ─── 立体几何题库 ─────────────────────────────────────
+const PROBLEMS: Problem[] = [
+  // ── 正四棱锥题组 ──────────────────────────────────
+  {
+    id: 'p4-01',
+    shape: 'pyramid4',
+    highlightFace: 0,
+    title: '正四棱锥侧面法向量',
+    statement:
+      '正四棱锥 P-ABCD，底面边长 a = 2，高 h = 3。\n' +
+      '以 A 为原点建立空间直角坐标系。求侧面 △ABP 的法向量 n。',
+    steps: [
+      {
+        hint: '① 先写出三个顶点的坐标。A、B 在底面，P 是顶点——你能写出它们的坐标吗？',
+        solution: 'A = (−1, 0, −1)，B = (1, 0, −1)，P = (0, 3, 0)',
+        formula: '以底面中心为原点，x/z 轴平行底面边',
+      },
+      {
+        hint: '② 计算 AB⃗ 和 AP⃗ 两个向量。向量 = 终点坐标 − 起点坐标。',
+        solution: 'AB⃗ = B − A = (2, 0, 0)\nAP⃗ = P − A = (1, 3, 1)',
+        formula: 'AB⃗ = (x_B−x_A, y_B−y_A, z_B−z_A)',
+      },
+      {
+        hint: '③ 法向量 n = AB⃗ × AP⃗（叉积）。回忆叉积公式：\nn = (a₂b₃−a₃b₂, a₃b₁−a₁b₃, a₁b₂−a₂b₁)',
+        solution:
+          'n = AB⃗ × AP⃗\n' +
+          '  = (0·1 − 0·3, 0·1 − 2·1, 2·3 − 0·1)\n' +
+          '  = (0, −2, 6)',
+        formula: 'n = AB⃗ × AP⃗',
+      },
+      {
+        hint: '④ 验证 n ⊥ 面：计算 n · AB⃗ 和 n · AP⃗，结果应均为 0。',
+        solution:
+          'n · AB⃗ = 0·2 + (−2)·0 + 6·0 = 0 ✓\n' +
+          'n · AP⃗ = 0·1 + (−2)·3 + 6·1 = 0 ✓\n' +
+          '验证通过！n = (0, −2, 6) 即为所求法向量。',
+        formula: 'n ⊥ 面 ⟺ n·AB = 0 且 n·AP = 0',
+      },
+    ],
+    answer: 'n = (0, −2, 6)（或化简为 (0, −1, 3)）',
+  },
+  {
+    id: 'p4-02',
+    shape: 'pyramid4',
+    highlightFace: 1,
+    title: '正四棱锥二面角',
+    statement:
+      '正四棱锥 P-ABCD，底面边长 a = 2，高 h = 3。\n' +
+      '求侧面 △BCP 与底面 ABCD 所成的二面角 θ。',
+    steps: [
+      {
+        hint: '① 二面角需要两个面各自的法向量。\n先求底面 ABCD 的法向量 n₁——底面平行于 xOz，法向量指向哪个方向？',
+        solution: '底面 ABCD 平行于 xOz 平面，故 n₁ = (0, 1, 0)（指向 y 轴正方向）',
+        formula: '水平面的法向量 = (0, 1, 0)',
+      },
+      {
+        hint: '② 求侧面 △BCP 的法向量 n₂。\n取 B = (1,0,−1)，C = (1,0,1)，P = (0,3,0)。\n先算 BC⃗ 和 BP⃗。',
+        solution:
+          'BC⃗ = C − B = (0, 0, 2)\n' +
+          'BP⃗ = P − B = (−1, 3, 1)\n' +
+          'n₂ = BC⃗ × BP⃗ = (0·1−2·3, 2·(−1)−0·1, 0·3−0·(−1))\n' +
+          '   = (−6, −2, 0)',
+        formula: 'n₂ = BC⃗ × BP⃗',
+      },
+      {
+        hint: '③ 用两法向量的夹角求二面角。\ncos θ = |n₁ · n₂| / (|n₁| · |n₂|)\n注意要取绝对值（取锐角/直角侧）。',
+        solution:
+          'n₁ · n₂ = 0·(−6) + 1·(−2) + 0·0 = −2\n' +
+          '|n₁| = 1，|n₂| = √(36+4+0) = √40 = 2√10\n' +
+          'cos θ = |−2| / (1 · 2√10) = 1/√10\n' +
+          'θ = arccos(1/√10) ≈ 71.57°',
+        formula: 'cos θ = |n₁·n₂| / (|n₁|·|n₂|)',
+      },
+    ],
+    answer: 'θ = arccos(1/√10) ≈ 71.57°',
+  },
+
+  // ── 正三棱锥题组 ──────────────────────────────────
+  {
+    id: 'p3-01',
+    shape: 'pyramid3',
+    highlightFace: 0,
+    title: '正三棱锥线面角',
+    statement:
+      '正三棱锥 P-ABC，底面边长 a = 2.5，高 h = 3。\n' +
+      '求棱 PA 与底面 ABC 所成的线面角 φ。',
+    steps: [
+      {
+        hint: '① 线面角 = 斜线与其在面内投影所成的角。\nPA 在底面的投影是 OA（O 为底面中心）。\n先求 OA 的长度——底面是正三角形，边长 2.5，外接圆半径是多少？',
+        solution:
+          '正三角形外接圆半径 R = a/√3 = 2.5/√3 ≈ 1.443\n' +
+          '故 |OA| ≈ 1.443，|PA|² = |OA|² + h² = 1/3·a² + h² = 2.083 + 9 = 11.083\n' +
+          '|PA| ≈ 3.329',
+        formula: 'R = a/√3（正三角形外接圆半径）',
+      },
+      {
+        hint: '② 线面角 φ 满足 tan φ = 高 / 投影长 = h / |OA|。\n代入计算。',
+        solution:
+          'tan φ = h / R = 3 / (2.5/√3) = 3√3/2.5 = 6√3/5 ≈ 2.078\n' +
+          'φ = arctan(6√3/5) ≈ 64.34°',
+        formula: 'tan φ = h / R（线面角公式）',
+      },
+      {
+        hint: '③ 用向量法验证：\nn = 底面法向量 (0,1,0)，PA⃗ = A − P。\ncos(90°−φ) = |PA⃗ · n| / |PA⃗|，则 sin φ = |PA⃗ · n| / |PA⃗|。',
+        solution:
+          '设 A = (R, 0, 0)，P = (0, 3, 0)（此处 R = a/√3 ≈ 1.443）\n' +
+          'PA⃗ = (R, −3, 0)，n = (0,1,0)\n' +
+          'PA⃗ · n = −3，|PA⃗| ≈ 3.329\n' +
+          'sin φ = |−3| / 3.329 ≈ 0.9010\n' +
+          'φ = arcsin(0.9010) ≈ 64.34° ✓ 两法一致。',
+        formula: 'sin φ = |l⃗ · n| / |l⃗|（线面角向量公式）',
+      },
+    ],
+    answer: 'φ = arctan(6√3/5) ≈ 64.34°',
+  },
+
+  // ── 长方体题组 ──────────────────────────────────
+  {
+    id: 'cb-01',
+    shape: 'cuboid',
+    highlightFace: 2,
+    title: '长方体体对角线与面的角',
+    statement:
+      '长方体 ABCD-EFGH，长 lx = 3，宽 lz = 2，高 ly = 2。\n' +
+      '求体对角线 AG 与底面 ABCD 所成的线面角 θ。',
+    steps: [
+      {
+        hint: '① 先写出 A、G 的坐标。\nA 是底面一角，G 是顶面对角——对应哪两个顶点？',
+        solution:
+          'A = (−1.5, −1, −1)，G = (1.5, 1, 1)\n（以长方体中心为坐标原点）',
+        formula: '顶点坐标 = (±lx/2, ±ly/2, ±lz/2)',
+      },
+      {
+        hint: '② AG⃗ = G − A。计算出 AG⃗ 各分量。',
+        solution: 'AG⃗ = (3, 2, 2)',
+        formula: 'AG⃗ = G − A',
+      },
+      {
+        hint: '③ AG 在底面的投影是 AG 在 xOz 平面内的投影 AC\' = (3, 0, 2)。\n线面角 θ 满足 tan θ = 竖直分量 / 水平投影长。',
+        solution:
+          '水平投影 = √(3² + 2²) = √13\n' +
+          'tan θ = 高度分量 / 投影长 = 2 / √13\n' +
+          'θ = arctan(2/√13) ≈ 29.05°',
+        formula: 'tan θ = ly / √(lx² + lz²)',
+      },
+      {
+        hint: '④ 用向量法验证：底面法向量 n = (0,1,0)。\nsin θ = |AG⃗ · n| / |AG⃗|。',
+        solution:
+          '|AG⃗| = √(9+4+4) = √17\n' +
+          'AG⃗ · n = 2\n' +
+          'sin θ = 2/√17 ≈ 0.4851\n' +
+          'θ = arcsin(2/√17) ≈ 29.05° ✓',
+        formula: 'sin θ = |AG⃗ · n̂|，n̂ = (0,1,0)',
+      },
+    ],
+    answer: 'θ = arctan(2/√13) ≈ 29.05°',
+  },
+  {
+    id: 'cb-02',
+    shape: 'cuboid',
+    highlightFace: 0,
+    title: '长方体点到面的距离',
+    statement:
+      '长方体 ABCD-EFGH，长 lx = 3，宽 lz = 2，高 ly = 2。\n' +
+      '求顶点 G 到底面 ABCD 的距离。',
+    steps: [
+      {
+        hint: '① G 在底面的垂足是哪个点？底面 ABCD 平行于 xOz 平面，G 的 y 坐标是多少？',
+        solution:
+          'G = (1.5, 1, 1)，底面 y = −1。\n' +
+          'G 在底面的垂足为 G\' = (1.5, −1, 1)（C 顶点正上方）。',
+        formula: '垂直距离 = Δy（因底面平行于 xOz）',
+      },
+      {
+        hint: '② 直接用坐标计算：距离 = |y_G − y_{底面}|。',
+        solution:
+          'd = |1 − (−1)| = 2\n' +
+          '即长方体高度 ly = 2，符合预期。',
+        formula: 'd = |y_G − y_底面|',
+      },
+      {
+        hint: '③ 用向量点面距公式验证：\nn = 底面法向量 (0,1,0)，取底面一点 A = (−1.5,−1,−1)。\nd = |GA⃗ · n̂|',
+        solution:
+          'GA⃗ = A − G = (−3, −2, −2)\n' +
+          'n̂ = (0,1,0)\n' +
+          'd = |GA⃗ · n̂| = |(−2)| = 2 ✓',
+        formula: 'd = |(P₀−P) · n̂|',
+      },
+    ],
+    answer: 'd = 2（即长方体高度）',
+  },
+];
 
 // ─── 旋转动画包装 ─────────────────────────────────────
 function AutoRotateGroup({ children, rotate }: { children: React.ReactNode; rotate: boolean }) {
@@ -212,7 +425,6 @@ function Scene({ shape, showNormal, showLabels, rotate, highlightFace }: {
         [verts[0], verts[1], verts[2]],
       ];
     }
-    // 长方体：6 个面，每面 2 个三角形，只取第一个
     return [
       [verts[0], verts[1], verts[2]], // 底面
       [verts[4], verts[5], verts[6]], // 顶面
@@ -287,15 +499,201 @@ function Row({ label, value, color = '#f1f5f9' }: { label: string; value: string
   );
 }
 
+// ─── 苏格拉底分步提示面板 ─────────────────────────────
+function SocraticPanel({ problem }: { problem: Problem }) {
+  const [unlockedSteps, setUnlockedSteps] = useState(0);
+  const [showSolution, setShowSolution] = useState<boolean[]>(new Array(problem.steps.length).fill(false));
+  const [finished, setFinished] = useState(false);
+
+  const unlockNext = () => {
+    if (unlockedSteps < problem.steps.length) {
+      setUnlockedSteps(s => s + 1);
+    }
+    if (unlockedSteps + 1 >= problem.steps.length) {
+      setFinished(true);
+    }
+  };
+
+  const toggleSolution = (idx: number) => {
+    setShowSolution(arr => {
+      const next = [...arr];
+      next[idx] = !next[idx];
+      return next;
+    });
+  };
+
+  // 重置
+  const reset = () => {
+    setUnlockedSteps(0);
+    setShowSolution(new Array(problem.steps.length).fill(false));
+    setFinished(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* 题干 */}
+      <div style={{
+        background: 'linear-gradient(135deg,#1e293b,#0f172a)',
+        border: '1px solid #6366f133',
+        borderRadius: '12px',
+        padding: '14px 16px',
+        boxShadow: '0 0 12px #6366f110',
+      }}>
+        <div style={{ fontSize: '12px', color: '#6366f1', fontWeight: 700, marginBottom: '8px' }}>
+          📋 题目
+        </div>
+        <div style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+          {problem.statement}
+        </div>
+      </div>
+
+      {/* 分步解题 */}
+      {problem.steps.map((step, i) => (
+        <div
+          key={i}
+          style={{
+            background: i < unlockedSteps
+              ? 'linear-gradient(135deg,#1e293b,#0f172a)'
+              : 'rgba(15,23,42,0.4)',
+            border: `1px solid ${i < unlockedSteps ? '#818cf833' : '#1e293b'}`,
+            borderRadius: '12px',
+            padding: '12px 14px',
+            transition: 'all 0.3s ease',
+            opacity: i < unlockedSteps ? 1 : 0.45,
+            boxShadow: i < unlockedSteps ? '0 0 10px #818cf810' : 'none',
+          }}
+        >
+          {/* 步骤头 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <div style={{
+              width: '22px', height: '22px', borderRadius: '50%',
+              background: i < unlockedSteps ? '#6366f1' : '#1e293b',
+              border: `2px solid ${i < unlockedSteps ? '#818cf8' : '#334155'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '11px', color: '#f8fafc', fontWeight: 700, flexShrink: 0,
+              transition: 'all 0.3s',
+            }}>
+              {i + 1}
+            </div>
+            <div style={{ fontSize: '12px', color: i < unlockedSteps ? '#94a3b8' : '#475569', fontStyle: 'italic', lineHeight: 1.5 }}>
+              {step.hint}
+            </div>
+          </div>
+
+          {/* 公式标签 */}
+          {step.formula && i < unlockedSteps && (
+            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '5px 10px', marginBottom: '8px', fontSize: '11px', color: '#f59e0b', fontFamily: 'monospace' }}>
+              🔑 {step.formula}
+            </div>
+          )}
+
+          {/* 解答展开 */}
+          {i < unlockedSteps && (
+            <div>
+              <button
+                onClick={() => toggleSolution(i)}
+                style={{
+                  background: showSolution[i] ? '#6366f120' : 'transparent',
+                  border: '1px solid #6366f133',
+                  borderRadius: '6px', padding: '4px 12px',
+                  fontSize: '11.5px', color: '#a5b4fc', cursor: 'pointer',
+                  transition: 'all 0.2s', marginBottom: showSolution[i] ? '8px' : '0',
+                }}
+              >
+                {showSolution[i] ? '▼ 收起解答' : '▶ 查看解答'}
+              </button>
+              {showSolution[i] && (
+                <div style={{
+                  background: '#0a0f1a',
+                  border: '1px solid #1e3a5f',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '12px', color: '#7dd3fc',
+                  fontFamily: 'monospace', lineHeight: 1.8,
+                  whiteSpace: 'pre-line',
+                  animation: 'fadeIn 0.25s ease',
+                }}>
+                  {step.solution}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* 解锁下一步 / 最终答案 */}
+      {!finished ? (
+        <button
+          onClick={unlockNext}
+          disabled={unlockedSteps >= problem.steps.length}
+          style={{
+            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            border: 'none', borderRadius: '10px',
+            padding: '10px 0', fontSize: '13px',
+            color: '#fff', fontWeight: 700, cursor: 'pointer',
+            boxShadow: '0 4px 15px #6366f130',
+            transition: 'opacity 0.2s',
+            opacity: unlockedSteps >= problem.steps.length ? 0.4 : 1,
+          }}
+        >
+          {unlockedSteps === 0 ? '🚀 开始解题' : `🔓 解锁第 ${unlockedSteps + 1} 步`}
+        </button>
+      ) : (
+        <div style={{
+          background: 'linear-gradient(135deg,#064e3b,#065f46)',
+          border: '1px solid #10b98133',
+          borderRadius: '12px',
+          padding: '14px 16px',
+          boxShadow: '0 0 20px #10b98120',
+        }}>
+          <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 700, marginBottom: '8px' }}>
+            🎯 最终答案
+          </div>
+          <div style={{ fontSize: '13px', color: '#6ee7b7', fontFamily: 'monospace', lineHeight: 1.8 }}>
+            {problem.answer}
+          </div>
+        </div>
+      )}
+
+      {/* 重置按钮 */}
+      {unlockedSteps > 0 && (
+        <button
+          onClick={reset}
+          style={{
+            background: 'transparent', border: '1px solid #334155',
+            borderRadius: '8px', padding: '7px 0',
+            fontSize: '12px', color: '#64748b', cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          ↺ 重新练习
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────
 // 主组件
 // ─────────────────────────────────────────────────────
 export function SolidGeo3D() {
-  const [shape, setShape]           = useState<ShapeType>('pyramid4');
-  const [showNormal, setShowNormal] = useState(true);
-  const [showLabels, setShowLabels] = useState(true);
-  const [rotate, setRotate]         = useState(false);
+  const [appMode, setAppMode]            = useState<AppMode>('explore');
+  const [shape, setShape]                = useState<ShapeType>('pyramid4');
+  const [showNormal, setShowNormal]      = useState(true);
+  const [showLabels, setShowLabels]      = useState(true);
+  const [rotate, setRotate]             = useState(false);
   const [highlightFace, setHighlightFace] = useState(0);
+
+  // 题目模式
+  const [problemIdx, setProblemIdx]      = useState(0);
+  const currentProblem                   = PROBLEMS[problemIdx];
+
+  // 当切换题目时同步几何体和高亮面
+  const selectProblem = (idx: number) => {
+    setProblemIdx(idx);
+    setShape(PROBLEMS[idx].shape);
+    setHighlightFace(PROBLEMS[idx].highlightFace);
+  };
 
   // 取当前形状顶点用于右侧演算
   const verts = shape === 'pyramid4' ? getPyramid4Verts()
@@ -353,127 +751,217 @@ export function SolidGeo3D() {
     cuboid:   ['底面 ABC','顶面 EFG','前面 ABF','后面 CDH','左面 ADH','右面 BCG'],
   };
 
-  return (
-    <div style={{ display: 'flex', width: '100%', height: '82vh', gap: '16px', boxSizing: 'border-box' }}>
-
-      {/* ── 左侧控制 ────────────────────────────── */}
-      <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
-        <div className="control-group">
-          <h3 className="control-title">3D 立体几何综合</h3>
-          <p style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
-            拖拽旋转视角，选择几何体与高亮面，观察法向量与代数推导。
-          </p>
+  // 右侧面板按 appMode 切换
+  const rightPanel = appMode === 'problem' ? (
+    <div style={{ width: '260px', flexShrink: 0, overflowY: 'auto', paddingRight: '2px' }}>
+      {/* 题目选择器 */}
+      <div style={{
+        background: 'linear-gradient(135deg,#1e293b,#0f172a)',
+        border: '1px solid #334155',
+        borderRadius: '12px',
+        padding: '12px 14px',
+        marginBottom: '12px',
+      }}>
+        <div style={{ fontSize: '12px', color: '#6366f1', fontWeight: 700, marginBottom: '8px' }}>
+          📚 题目列表
         </div>
-
-        {/* 形状选择 */}
-        <div className="control-group">
-          <label className="control-label">几何体</label>
-          {(['pyramid4', 'pyramid3', 'cuboid'] as ShapeType[]).map(s => (
-            <button key={s} onClick={() => { setShape(s); setHighlightFace(0); }} style={{
-              display: 'block', width: '100%', marginBottom: '6px',
-              padding: '8px 10px', fontSize: '13px', fontWeight: 600,
-              borderRadius: '8px', border: '1px solid', cursor: 'pointer',
+        {PROBLEMS.map((p, i) => (
+          <button
+            key={p.id}
+            onClick={() => selectProblem(i)}
+            style={{
+              display: 'block', width: '100%', textAlign: 'left',
+              background: problemIdx === i ? '#6366f120' : 'transparent',
+              border: `1px solid ${problemIdx === i ? '#6366f1' : '#1e293b'}`,
+              borderRadius: '7px', padding: '7px 10px',
+              marginBottom: '5px', cursor: 'pointer',
+              fontSize: '12px', color: problemIdx === i ? '#a5b4fc' : '#64748b',
               transition: 'all 0.18s',
-              borderColor: shape === s ? '#6366f1' : '#334155',
-              backgroundColor: shape === s ? '#6366f120' : '#1e293b',
-              color: shape === s ? '#a5b4fc' : '#94a3b8',
-            }}>
-              {shapeNames[s]}
-            </button>
-          ))}
-        </div>
-
-        {/* 高亮面 */}
-        <div className="control-group">
-          <label className="control-label">高亮面</label>
-          <select
-            value={safeFace}
-            onChange={e => setHighlightFace(parseInt(e.target.value))}
-            style={{ width: '100%', padding: '7px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155', fontSize: '12px' }}
+            }}
           >
-            {faceNames[shape].map((name, i) => (
-              <option key={i} value={i}>{name}</option>
+            <span style={{ color: '#475569', marginRight: '6px' }}>
+              {p.shape === 'pyramid4' ? '🔺' : p.shape === 'pyramid3' ? '▲' : '🟦'}
+            </span>
+            {p.title}
+          </button>
+        ))}
+      </div>
+      <SocraticPanel key={currentProblem.id} problem={currentProblem} />
+    </div>
+  ) : (
+    <div style={{ width: '220px', flexShrink: 0, overflowY: 'auto' }}>
+      <Card title={`📐 ${shapeNames[shape]}`} accent="#6366f1">
+        <Row label="顶点数" value={`${verts.length}`} />
+        {verts.map((v, i) => (
+          <Row key={i} label={labels[i]} value={fmt(v)} color="#94a3b8" />
+        ))}
+      </Card>
+
+      <Card title={`🔮 高亮面法向量`} accent="#e879f9">
+        <Row label="顶点1" value={fmt(tri[0])} color="#60a5fa" />
+        <Row label="顶点2" value={fmt(tri[1])} color="#34d399" />
+        <Row label="顶点3" value={fmt(tri[2])} color="#fb923c" />
+        <div style={{ margin: '6px 0', height: '1px', background: '#1e293b' }} />
+        <Row label="AB⃗" value={fmt(AB)} />
+        <Row label="AC⃗" value={fmt(AC)} />
+        <Row label="n = AB×AC" value={fmt(N)} color="#e879f9" />
+        <Row label="|n|" value={fN(magN)} color="#e879f9" />
+        <Row label="n̂" value={fmt(Nn, 3)} color="#c084fc" />
+      </Card>
+
+      <Card title="📏 原点→高亮面距离" accent="#fbbf24">
+        <Row label="d(O, 面) =" value={fN(dOriginToFace)} color="#fbbf24" />
+        <div style={{ fontSize: '11px', color: '#475569', marginTop: '6px', lineHeight: 1.6 }}>
+          d = |n̂ · AO⃗|<br />
+          AO⃗ = {fmt(sub3({ x: 0, y: 0, z: 0 }, tri[0]))}
+        </div>
+      </Card>
+
+      <Card title="⚡ 点积验证" accent="#34d399">
+        <Row label="n · AB⃗" value={fN(dot3(N, AB))} color={Math.abs(dot3(N, AB)) < 0.01 ? '#34d399' : '#ef4444'} />
+        <Row label="n · AC⃗" value={fN(dot3(N, AC))} color={Math.abs(dot3(N, AC)) < 0.01 ? '#34d399' : '#ef4444'} />
+        <div style={{ fontSize: '11px', color: '#475569', marginTop: '6px', lineHeight: 1.6 }}>
+          两值均≈0 验证 n⊥面 ✓
+        </div>
+      </Card>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '82vh', gap: '0', boxSizing: 'border-box' }}>
+
+      {/* ── 顶部模式切换 Tab ─────────────────────────── */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        {([['explore', '🔍 自由探索'], ['problem', '📝 综合例题']] as [AppMode, string][]).map(([mode, label]) => (
+          <button
+            key={mode}
+            onClick={() => setAppMode(mode)}
+            style={{
+              padding: '8px 20px',
+              borderRadius: '10px',
+              border: `1px solid ${appMode === mode ? '#6366f1' : '#1e293b'}`,
+              background: appMode === mode ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : '#0f172a',
+              color: appMode === mode ? '#fff' : '#64748b',
+              fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+              boxShadow: appMode === mode ? '0 4px 15px #6366f130' : 'none',
+              transition: 'all 0.2s',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <span style={{ fontSize: '11.5px', color: '#334155', alignSelf: 'center' }}>
+          拖拽旋转 · 滚轮缩放
+        </span>
+      </div>
+
+      {/* ── 主体三栏布局 ─────────────────────────────── */}
+      <div style={{ display: 'flex', flex: 1, gap: '16px', minHeight: 0 }}>
+
+        {/* ── 左侧控制 ─────────────────────────── */}
+        <div style={{ width: '200px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+          <div className="control-group">
+            <h3 className="control-title">3D 立体几何综合</h3>
+            <p style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
+              {appMode === 'explore'
+                ? '选择几何体与高亮面，观察法向量与代数推导。'
+                : '选择题目后，3D 视图会自动切换对应几何体。'}
+            </p>
+          </div>
+
+          {/* 形状选择（探索模式显示） */}
+          {appMode === 'explore' && (
+            <>
+              <div className="control-group">
+                <label className="control-label">几何体</label>
+                {(['pyramid4', 'pyramid3', 'cuboid'] as ShapeType[]).map(s => (
+                  <button key={s} onClick={() => { setShape(s); setHighlightFace(0); }} style={{
+                    display: 'block', width: '100%', marginBottom: '6px',
+                    padding: '8px 10px', fontSize: '13px', fontWeight: 600,
+                    borderRadius: '8px', border: '1px solid', cursor: 'pointer',
+                    transition: 'all 0.18s',
+                    borderColor: shape === s ? '#6366f1' : '#334155',
+                    backgroundColor: shape === s ? '#6366f120' : '#1e293b',
+                    color: shape === s ? '#a5b4fc' : '#94a3b8',
+                  }}>
+                    {shapeNames[s]}
+                  </button>
+                ))}
+              </div>
+
+              <div className="control-group">
+                <label className="control-label">高亮面</label>
+                <select
+                  value={safeFace}
+                  onChange={e => setHighlightFace(parseInt(e.target.value))}
+                  style={{ width: '100%', padding: '7px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155', fontSize: '12px' }}
+                >
+                  {faceNames[shape].map((name, i) => (
+                    <option key={i} value={i}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* 题目模式：形状只读展示 */}
+          {appMode === 'problem' && (
+            <div className="control-group">
+              <label className="control-label">当前几何体</label>
+              <div style={{
+                padding: '8px 10px', borderRadius: '8px',
+                background: '#6366f120', border: '1px solid #6366f133',
+                fontSize: '13px', color: '#a5b4fc', fontWeight: 600,
+              }}>
+                {shapeNames[shape]}
+              </div>
+            </div>
+          )}
+
+          {/* 显示选项 */}
+          <div className="control-group">
+            <label className="control-label">显示选项</label>
+            {[
+              ['showNormal', showNormal, () => setShowNormal(v => !v), '法向量'],
+              ['showLabels', showLabels, () => setShowLabels(v => !v), '顶点标签'],
+              ['rotate',     rotate,     () => setRotate(v => !v),     '自动旋转'],
+            ].map(([key, val, fn, text]) => (
+              <label key={key as string} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', cursor: 'pointer', fontSize: '13px', color: val ? '#a5b4fc' : '#64748b' }}>
+                <input type="checkbox" checked={val as boolean} onChange={fn as any} style={{ accentColor: '#6366f1' }} />
+                {text as string}
+              </label>
             ))}
-          </select>
+          </div>
         </div>
 
-        {/* 显示选项 */}
-        <div className="control-group">
-          <label className="control-label">显示选项</label>
-          {[
-            ['showNormal', showNormal, () => setShowNormal(v => !v), '法向量'],
-            ['showLabels', showLabels, () => setShowLabels(v => !v), '顶点标签'],
-            ['rotate',     rotate,     () => setRotate(v => !v),     '自动旋转'],
-          ].map(([key, val, fn, text]) => (
-            <label key={key as string} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', cursor: 'pointer', fontSize: '13px', color: val ? '#a5b4fc' : '#64748b' }}>
-              <input type="checkbox" checked={val as boolean} onChange={fn as any} style={{ accentColor: '#6366f1' }} />
-              {text as string}
-            </label>
-          ))}
+        {/* ── 中间 3D Canvas ───────────────────────── */}
+        <div style={{ flex: 1, borderRadius: '16px', overflow: 'hidden', border: '1px solid #1e293b', background: '#090d16' }}>
+          <Suspense fallback={
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#64748b' }}>
+              加载 3D 场景中…
+            </div>
+          }>
+            <Canvas
+              camera={{ position: [5, 4, 5], fov: 45 }}
+              gl={{ antialias: true }}
+              shadows
+            >
+              <color attach="background" args={['#090d16']} />
+              <fog attach="fog" args={['#090d16', 12, 25]} />
+              <Scene
+                shape={shape}
+                showNormal={showNormal}
+                showLabels={showLabels}
+                rotate={rotate}
+                highlightFace={safeFace}
+              />
+            </Canvas>
+          </Suspense>
         </div>
-      </div>
 
-      {/* ── 中间 3D Canvas ───────────────────────── */}
-      <div style={{ flex: 1, borderRadius: '16px', overflow: 'hidden', border: '1px solid #1e293b', background: '#090d16' }}>
-        <Suspense fallback={
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#64748b' }}>
-            加载 3D 场景中…
-          </div>
-        }>
-          <Canvas
-            camera={{ position: [5, 4, 5], fov: 45 }}
-            gl={{ antialias: true }}
-            shadows
-          >
-            <color attach="background" args={['#090d16']} />
-            <fog attach="fog" args={['#090d16', 12, 25]} />
-            <Scene
-              shape={shape}
-              showNormal={showNormal}
-              showLabels={showLabels}
-              rotate={rotate}
-              highlightFace={safeFace}
-            />
-          </Canvas>
-        </Suspense>
-      </div>
-
-      {/* ── 右侧代数演算 ─────────────────────────── */}
-      <div style={{ width: '220px', flexShrink: 0, overflowY: 'auto' }}>
-        <Card title={`📐 ${shapeNames[shape]}`} accent="#6366f1">
-          <Row label="顶点数" value={`${verts.length}`} />
-          {verts.map((v, i) => (
-            <Row key={i} label={labels[i]} value={fmt(v)} color="#94a3b8" />
-          ))}
-        </Card>
-
-        <Card title={`🔮 高亮面法向量`} accent="#e879f9">
-          <Row label="顶点1" value={fmt(tri[0])} color="#60a5fa" />
-          <Row label="顶点2" value={fmt(tri[1])} color="#34d399" />
-          <Row label="顶点3" value={fmt(tri[2])} color="#fb923c" />
-          <div style={{ margin: '6px 0', height: '1px', background: '#1e293b' }} />
-          <Row label="AB⃗" value={fmt(AB)} />
-          <Row label="AC⃗" value={fmt(AC)} />
-          <Row label="n = AB×AC" value={fmt(N)} color="#e879f9" />
-          <Row label="|n|" value={fN(magN)} color="#e879f9" />
-          <Row label="n̂" value={fmt(Nn, 3)} color="#c084fc" />
-        </Card>
-
-        <Card title="📏 原点→高亮面距离" accent="#fbbf24">
-          <Row label="d(O, 面) =" value={fN(dOriginToFace)} color="#fbbf24" />
-          <div style={{ fontSize: '11px', color: '#475569', marginTop: '6px', lineHeight: 1.6 }}>
-            d = |n̂ · AO⃗|<br />
-            AO⃗ = {fmt(sub3({ x: 0, y: 0, z: 0 }, tri[0]))}
-          </div>
-        </Card>
-
-        <Card title="⚡ 点积验证" accent="#34d399">
-          <Row label="n · AB⃗" value={fN(dot3(N, AB))} color={Math.abs(dot3(N, AB)) < 0.01 ? '#34d399' : '#ef4444'} />
-          <Row label="n · AC⃗" value={fN(dot3(N, AC))} color={Math.abs(dot3(N, AC)) < 0.01 ? '#34d399' : '#ef4444'} />
-          <div style={{ fontSize: '11px', color: '#475569', marginTop: '6px', lineHeight: 1.6 }}>
-            两值均≈0 验证 n⊥面 ✓
-          </div>
-        </Card>
+        {/* ── 右侧面板（按模式切换） ─────────────────── */}
+        {rightPanel}
       </div>
     </div>
   );
