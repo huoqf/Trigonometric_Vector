@@ -17,6 +17,11 @@ import { ExamTraining } from '@/features/exam_training/ExamTraining';
 import { SumDifference } from '@/features/trig-identity/SumDifference';
 import { DoubleAnglePowerReduction } from '@/features/trig-identity/DoubleAnglePowerReduction';
 import { SpaceVectorBasic } from '@/features/space-vector/SpaceVectorBasic';
+import { SpaceVectorCoord } from '@/features/space-vector/SpaceVectorCoord';
+import { SpaceVectorTheorem } from '@/features/space-vector/SpaceVectorTheorem';
+import { SolidGeoJudge } from '@/features/space-vector/SolidGeoJudge';
+import { SolidGeoMetric } from '@/features/space-vector/SolidGeoMetric';
+import { SolidGeo3D } from '@/features/space-vector/SolidGeo3D';
 import './App.css';
 
 function App() {
@@ -216,12 +221,11 @@ function App() {
         {activeModule === 'space' && (
           <>
             {activeSpaceTab === 'space-basic' && <SpaceVectorBasic />}
-            {activeSpaceTab !== 'space-basic' && (
-              <div style={{ color: '#94a3b8', padding: '40px', textAlign: 'center' }}>
-                <p style={{ fontSize: '18px' }}>模块开发中 (里程碑 4)...</p>
-                <p>即将在本区域挂载 {activeSpaceTab} 组件</p>
-              </div>
-            )}
+            {activeSpaceTab === 'space-coord' && <SpaceVectorCoord />}
+            {activeSpaceTab === 'space-theorem' && <SpaceVectorTheorem />}
+            {activeSpaceTab === 'solid-judge' && <SolidGeoJudge />}
+            {activeSpaceTab === 'solid-metric' && <SolidGeoMetric />}
+            {activeSpaceTab === 'solid-3d' && <SolidGeo3D />}
           </>
         )}
       </main>

@@ -1,6 +1,6 @@
 # MathVision 项目开发进度报告 (ROADMAP_PROGRESS)
 
-> 最后更新：2026-05-25（完成里程碑 4 架构适配性评估，确立四阶段最小改动方案；里程碑 2.5 第一阶段已交付）
+> 最后更新：2026-05-26（完成里程碑 4 阶段 2 并开启阶段 3 专题 6：Three.js 3D 渲染组件 `SolidGeo3D.tsx` 基础骨架搭建与 Tab 挂载已完成，通过构建验证）
 
 ## 当前整体状态
 
@@ -123,28 +123,28 @@
 - [x] **1. 空间向量的基础概念与线性运算**
   - 已完成：新建 `src/features/space-vector/SpaceVectorBasic.tsx`
   - 实现了基于等轴测投影的 SVG 交互演示，支持空间向量的三维加法（平行四边形法则）、减法、标量乘法以及共线判定。通过 ThreeScreenLayout 左中右面板，实现控制台拖拽、中央等轴测图像渲染与右侧代数指标闭环联动。
-- [ ] **2. 空间向量的坐标表示与运算（代数工具）**
-  - 计划新建 `src/features/space-vector/SpaceVectorCoord.tsx`
+- [x] **2. 空间向量的坐标表示与运算（代数工具）**
+  - 已完成：新建 `src/features/space-vector/SpaceVectorCoord.tsx`
   - 三个坐标输入框联动三维箭头显示，实时演算看板展示模长、方向余弦、点积结果
-- [ ] **3. 空间向量的基本定理与性质（理论核心）**
-  - 计划新建 `src/features/space-vector/SpaceVectorTheorem.tsx`
+- [x] **3. 空间向量的基本定理与性质（理论核心）**
+  - 已完成：新建 `src/features/space-vector/SpaceVectorTheorem.tsx`
   - 演示三基底线性表示（基底分解动画）、共面向量条件、中点/分点公式空间推广
 
 #### 阶段 2 — 专题 4-5（SVG 等轴测，判定与度量层）
 
-- [ ] **4. 向量方法在立体几何中的应用（几何判定）**
-  - 计划新建 `src/features/space-vector/SolidGeoJudge.tsx`
-  - 法向量求解（叉积可视化）、直线平行/垂直/线面角判定，拖拽几何体顶点实时更新代数过程
-- [ ] **5. 空间角与距离的计算（度量求解）**
-  - 计划新建 `src/features/space-vector/SolidGeoMetric.tsx`
-  - 二面角/线面角/线线角交互演示，点面距/线面距/异面线距分步演算看板（含向量公式验证）
+- [x] **4. 向量方法在立体几何中的应用（几何判定）**
+  - 已完成：新建 `src/features/space-vector/SolidGeoJudge.tsx`
+  - 实现了法向量叉积可视化（三点确定平面，等轴测 SVG 实时渲染 n = AB × AC），四种判定模式（法向量求解、平行关系、垂直关系、线面角计算），右侧代数演算面板含点积/叉积判据、线面角 θ = |90° − ∠(L, n)| 分步演算及投影分量展示。
+- [x] **5. 空间角与距离的计算（度量求解）**
+  - 已完成：新建 `src/features/space-vector/SolidGeoMetric.tsx`
+  - 实现四种度量模式：**二面角**（两平面法向量夹角，分步演算）、**线线角**（取锐角，含平行/垂直判定）、**线面角**（θ = |90°−∠(L,n)|，含投影分解）、**空间距离**（点面距、点线距、异面线距公式，SVG 可视化垂线/公垂线）
 
 #### 阶段 3 — 专题 6（Three.js 升级，综合层）
 
-- [ ] **6. 立体几何综合题与微专题（高级综合）**
-  - 安装依赖：`three` + `@react-three/fiber` + `@react-three/drei`
-  - 计划新建 `src/features/space-vector/SolidGeo3D.tsx`（独立 Canvas 渲染层）
-  - 扩展题库：正四棱锥/正三棱锥/长方体，配合苏格拉底分步提示
+- [/] **6. 立体几何综合题与微专题（高级综合）**
+  - 已完成：安装 `three` + `@react-three/fiber` + `@react-three/drei` 依赖并验证构建。
+  - 已完成：新建 `src/features/space-vector/SolidGeo3D.tsx` 独立 3D Canvas 渲染层，实现轨道控制 (OrbitControls)、网格辅助 (GridHelper)、坐标轴辅助 (AxesHelper)、模型选择与光照。
+  - 待完成：扩展立体几何题库（正四棱锥/正三棱锥/长方体），结合苏格拉底分步提示及向量法详细解析面板。
 
 ---
 

@@ -8,7 +8,7 @@ import {
   pointToLineDistance, skewLinesDistance,
   directionCosines, midpoint3, divisionPoint3, planeNormal, dihedralAngle
 } from '@/math/vector3';
-import type { Vector3, Plane3, Line3 } from '@/types/vector3';
+import type { Plane3, Line3 } from '@/types/vector3';
 
 const PI = Math.PI;
 

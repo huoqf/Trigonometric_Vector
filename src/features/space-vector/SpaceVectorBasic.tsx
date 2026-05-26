@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ThreeScreenLayout } from '@/components/common/ThreeScreenLayout';
 import { useSpaceVectorStore } from '@/store/useSpaceVectorStore';
 import { math3DToScreen } from '@/utils/coordinate3';
@@ -24,9 +24,9 @@ export function SpaceVectorBasic() {
   const svgParams = { width: 600, height: 600, unitPx: 30 };
 
   const originScreen = math3DToScreen({ x: 0, y: 0, z: 0 }, svgParams);
-  const xAxisScreen = math3DToScreen({ x: 10, y: 0, z: 0 }, svgParams);
-  const yAxisScreen = math3DToScreen({ x: 0, y: 10, z: 0 }, svgParams);
-  const zAxisScreen = math3DToScreen({ x: 0, y: 0, z: 10 }, svgParams);
+  const xAxisScreen = math3DToScreen({ x: 8.5, y: 0, z: 0 }, svgParams);
+  const yAxisScreen = math3DToScreen({ x: 0, y: 8.5, z: 0 }, svgParams);
+  const zAxisScreen = math3DToScreen({ x: 0, y: 0, z: 8.5 }, svgParams);
 
   const aScreen = math3DToScreen(a, svgParams);
   const bScreen = math3DToScreen(b, svgParams);
@@ -142,9 +142,9 @@ export function SpaceVectorBasic() {
         <line x1={originScreen.x} y1={originScreen.y} x2={yAxisScreen.x} y2={yAxisScreen.y} stroke="#334155" strokeWidth="2" markerEnd="url(#arrow-y)" />
         <line x1={originScreen.x} y1={originScreen.y} x2={zAxisScreen.x} y2={zAxisScreen.y} stroke="#334155" strokeWidth="2" markerEnd="url(#arrow-z)" />
         
-        <text x={xAxisScreen.x + 10} y={xAxisScreen.y} fill="#94a3b8" fontSize="14" fontWeight="bold">x</text>
-        <text x={yAxisScreen.x} y={yAxisScreen.y - 10} fill="#94a3b8" fontSize="14" fontWeight="bold">y</text>
-        <text x={zAxisScreen.x - 15} y={zAxisScreen.y + 10} fill="#94a3b8" fontSize="14" fontWeight="bold">z</text>
+        <text x={xAxisScreen.x - 15} y={xAxisScreen.y + 15} fill="#94a3b8" fontSize="14" fontWeight="bold">x</text>
+        <text x={yAxisScreen.x + 15} y={yAxisScreen.y + 15} fill="#94a3b8" fontSize="14" fontWeight="bold">y</text>
+        <text x={zAxisScreen.x} y={zAxisScreen.y - 10} fill="#94a3b8" fontSize="14" fontWeight="bold" textAnchor="middle">z</text>
 
         {/* 辅助线 - 平行四边形法则 */}
         {operation === 'add' && (
