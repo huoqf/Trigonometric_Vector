@@ -10,10 +10,11 @@
  *   - 立体几何题库 + 苏格拉底分步提示面板（题目模式）
  */
 
-import { useRef, useState, useMemo, Suspense } from 'react';
+import { useRef, useState, useMemo, useEffect, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Line, Text, Sphere, GizmoHelper, GizmoViewport } from '@react-three/drei';
+import { OrbitControls, Line, Html, Sphere, GizmoHelper, GizmoViewport } from '@react-three/drei';
 import * as THREE from 'three';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { dot3, magnitude3, normalize3, sub3, planeNormal, pointToPlaneDistance, cross3 } from '@/math/vector3';
 import type { Vector3 as Vec3 } from '@/types/vector3';
 
@@ -332,14 +333,21 @@ function VertexMarkers({ verts, labels, showLabels }: {
             <meshStandardMaterial color="#f8fafc" emissive="#6366f1" emissiveIntensity={0.6} />
           </Sphere>
           {showLabels && (
-            <Text
-              position={[0.15, 0.15, 0]}
-              fontSize={0.25}
-              color="#a5b4fc"
-              anchorX="left"
+            <Html
+              position={[0.12, 0.12, 0]}
+              style={{
+                color: '#ffffff',
+                fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                userSelect: 'none',
+                textShadow: '1px 1px 2px #090d16, -1px -1px 2px #090d16, 1px -1px 2px #090d16, -1px 1px 2px #090d16',
+                pointerEvents: 'none',
+                whiteSpace: 'nowrap'
+              }}
             >
               {labels[i]}
-            </Text>
+            </Html>
           )}
         </group>
       ))}
@@ -379,6 +387,12 @@ function TransparentFace({ verts, color, opacity = 0.15 }: {
     geo.computeVertexNormals();
     return geo;
   }, [verts]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
 
   return (
     <mesh geometry={geometry}>
@@ -533,16 +547,16 @@ function SocraticPanel({ problem }: { problem: Problem }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {/* 题干 */}
       <div style={{
-        background: 'linear-gradient(135deg,#1e293b,#0f172a)',
-        border: '1px solid #6366f133',
+        background: 'rgba(17, 24, 39, 0.95)',
+        border: '1px solid rgba(99, 102, 241, 0.2)',
         borderRadius: '12px',
         padding: '14px 16px',
-        boxShadow: '0 0 12px #6366f110',
+        boxShadow: '0 0 12px rgba(99, 102, 241, 0.15)',
       }}>
-        <div style={{ fontSize: '12px', color: '#6366f1', fontWeight: 700, marginBottom: '8px' }}>
+        <div style={{ fontSize: '13px', color: '#818cf8', fontWeight: 700, marginBottom: '8px', letterSpacing: '0.03em' }}>
           📋 题目
         </div>
-        <div style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+        <div style={{ fontSize: '14px', color: '#f8fafc', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
           {problem.statement}
         </div>
       </div>
@@ -553,36 +567,47 @@ function SocraticPanel({ problem }: { problem: Problem }) {
           key={i}
           style={{
             background: i < unlockedSteps
-              ? 'linear-gradient(135deg,#1e293b,#0f172a)'
-              : 'rgba(15,23,42,0.4)',
-            border: `1px solid ${i < unlockedSteps ? '#818cf833' : '#1e293b'}`,
+              ? 'rgba(17, 24, 39, 0.95)'
+              : 'rgba(17, 24, 39, 0.5)',
+            border: `1px solid ${i < unlockedSteps ? 'rgba(129, 140, 248, 0.2)' : 'rgba(255, 255, 255, 0.05)'}`,
             borderRadius: '12px',
             padding: '12px 14px',
             transition: 'all 0.3s ease',
-            opacity: i < unlockedSteps ? 1 : 0.45,
-            boxShadow: i < unlockedSteps ? '0 0 10px #818cf810' : 'none',
+            opacity: i < unlockedSteps ? 1 : 0.6,
+            boxShadow: i < unlockedSteps ? '0 0 10px rgba(129, 140, 248, 0.1)' : 'none',
           }}
         >
           {/* 步骤头 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <div style={{
               width: '22px', height: '22px', borderRadius: '50%',
-              background: i < unlockedSteps ? '#6366f1' : '#1e293b',
-              border: `2px solid ${i < unlockedSteps ? '#818cf8' : '#334155'}`,
+              background: i < unlockedSteps ? '#6366f1' : '#1f2937',
+              border: `2px solid ${i < unlockedSteps ? '#818cf8' : '#374151'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '11px', color: '#f8fafc', fontWeight: 700, flexShrink: 0,
               transition: 'all 0.3s',
             }}>
               {i + 1}
             </div>
-            <div style={{ fontSize: '12px', color: i < unlockedSteps ? '#94a3b8' : '#475569', fontStyle: 'italic', lineHeight: 1.5 }}>
-              {step.hint}
+            <div style={{ fontSize: '13px', color: i < unlockedSteps ? '#e2e8f0' : '#94a3b8', fontStyle: 'italic', lineHeight: 1.5 }}>
+              {i >= unlockedSteps && '🔒 '}{step.hint}
             </div>
           </div>
 
           {/* 公式标签 */}
           {step.formula && i < unlockedSteps && (
-            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '5px 10px', marginBottom: '8px', fontSize: '11px', color: '#f59e0b', fontFamily: 'monospace' }}>
+            <div style={{ 
+              background: '#030712', 
+              border: '1px solid rgba(245, 158, 11, 0.2)', 
+              borderRadius: '6px', 
+              padding: '6px 10px', 
+              marginBottom: '8px', 
+              fontSize: '11.5px', 
+              color: '#f59e0b', 
+              fontFamily: 'monospace',
+              maxWidth: '100%',
+              overflowX: 'auto'
+            }}>
               🔑 {step.formula}
             </div>
           )}
@@ -593,10 +618,10 @@ function SocraticPanel({ problem }: { problem: Problem }) {
               <button
                 onClick={() => toggleSolution(i)}
                 style={{
-                  background: showSolution[i] ? '#6366f120' : 'transparent',
-                  border: '1px solid #6366f133',
-                  borderRadius: '6px', padding: '4px 12px',
-                  fontSize: '11.5px', color: '#a5b4fc', cursor: 'pointer',
+                  background: showSolution[i] ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  borderRadius: '6px', padding: '5px 12px',
+                  fontSize: '12px', color: '#c7d2fe', cursor: 'pointer',
                   transition: 'all 0.2s', marginBottom: showSolution[i] ? '8px' : '0',
                 }}
               >
@@ -604,14 +629,16 @@ function SocraticPanel({ problem }: { problem: Problem }) {
               </button>
               {showSolution[i] && (
                 <div style={{
-                  background: '#0a0f1a',
-                  border: '1px solid #1e3a5f',
+                  background: '#030712',
+                  border: '1px solid rgba(14, 165, 233, 0.2)',
                   borderRadius: '8px',
-                  padding: '10px 12px',
-                  fontSize: '12px', color: '#7dd3fc',
-                  fontFamily: 'monospace', lineHeight: 1.8,
+                  padding: '12px',
+                  fontSize: '12.5px', color: '#38bdf8',
+                  fontFamily: 'monospace', lineHeight: 1.7,
                   whiteSpace: 'pre-line',
                   animation: 'fadeIn 0.25s ease',
+                  maxWidth: '100%',
+                  overflowX: 'auto'
                 }}>
                   {step.solution}
                 </div>
@@ -629,9 +656,9 @@ function SocraticPanel({ problem }: { problem: Problem }) {
           style={{
             background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
             border: 'none', borderRadius: '10px',
-            padding: '10px 0', fontSize: '13px',
+            padding: '10px 0', fontSize: '13.5px',
             color: '#fff', fontWeight: 700, cursor: 'pointer',
-            boxShadow: '0 4px 15px #6366f130',
+            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
             transition: 'opacity 0.2s',
             opacity: unlockedSteps >= problem.steps.length ? 0.4 : 1,
           }}
@@ -640,16 +667,16 @@ function SocraticPanel({ problem }: { problem: Problem }) {
         </button>
       ) : (
         <div style={{
-          background: 'linear-gradient(135deg,#064e3b,#065f46)',
-          border: '1px solid #10b98133',
+          background: 'rgba(6, 78, 59, 0.8)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
           borderRadius: '12px',
           padding: '14px 16px',
-          boxShadow: '0 0 20px #10b98120',
+          boxShadow: '0 0 20px rgba(16, 185, 129, 0.15)',
         }}>
-          <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 700, marginBottom: '8px' }}>
+          <div style={{ fontSize: '13px', color: '#34d399', fontWeight: 700, marginBottom: '8px' }}>
             🎯 最终答案
           </div>
-          <div style={{ fontSize: '13px', color: '#6ee7b7', fontFamily: 'monospace', lineHeight: 1.8 }}>
+          <div style={{ fontSize: '13.5px', color: '#a7f3d0', fontFamily: 'monospace', lineHeight: 1.7, maxWidth: '100%', overflowX: 'auto' }}>
             {problem.answer}
           </div>
         </div>
@@ -660,9 +687,9 @@ function SocraticPanel({ problem }: { problem: Problem }) {
         <button
           onClick={reset}
           style={{
-            background: 'transparent', border: '1px solid #334155',
+            background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(148, 163, 184, 0.2)',
             borderRadius: '8px', padding: '7px 0',
-            fontSize: '12px', color: '#64748b', cursor: 'pointer',
+            fontSize: '12px', color: '#94a3b8', cursor: 'pointer',
             transition: 'all 0.2s',
           }}
         >
@@ -753,16 +780,16 @@ export function SolidGeo3D() {
 
   // 右侧面板按 appMode 切换
   const rightPanel = appMode === 'problem' ? (
-    <div style={{ width: '260px', flexShrink: 0, overflowY: 'auto', paddingRight: '2px' }}>
+    <div style={{ width: '28%', minWidth: '280px', maxWidth: '360px', flexShrink: 0, overflowY: 'auto', paddingRight: '2px' }}>
       {/* 题目选择器 */}
       <div style={{
-        background: 'linear-gradient(135deg,#1e293b,#0f172a)',
-        border: '1px solid #334155',
+        background: 'rgba(17, 24, 39, 0.95)',
+        border: '1px solid rgba(99, 102, 241, 0.2)',
         borderRadius: '12px',
         padding: '12px 14px',
         marginBottom: '12px',
       }}>
-        <div style={{ fontSize: '12px', color: '#6366f1', fontWeight: 700, marginBottom: '8px' }}>
+        <div style={{ fontSize: '13px', color: '#818cf8', fontWeight: 700, marginBottom: '8px' }}>
           📚 题目列表
         </div>
         {PROBLEMS.map((p, i) => (
@@ -771,15 +798,15 @@ export function SolidGeo3D() {
             onClick={() => selectProblem(i)}
             style={{
               display: 'block', width: '100%', textAlign: 'left',
-              background: problemIdx === i ? '#6366f120' : 'transparent',
-              border: `1px solid ${problemIdx === i ? '#6366f1' : '#1e293b'}`,
+              background: problemIdx === i ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+              border: `1px solid ${problemIdx === i ? 'rgba(99, 102, 241, 0.6)' : 'rgba(255, 255, 255, 0.05)'}`,
               borderRadius: '7px', padding: '7px 10px',
               marginBottom: '5px', cursor: 'pointer',
-              fontSize: '12px', color: problemIdx === i ? '#a5b4fc' : '#64748b',
+              fontSize: '12.5px', color: problemIdx === i ? '#a5b4fc' : '#94a3b8',
               transition: 'all 0.18s',
             }}
           >
-            <span style={{ color: '#475569', marginRight: '6px' }}>
+            <span style={{ color: '#64748b', marginRight: '6px' }}>
               {p.shape === 'pyramid4' ? '🔺' : p.shape === 'pyramid3' ? '▲' : '🟦'}
             </span>
             {p.title}
@@ -789,7 +816,7 @@ export function SolidGeo3D() {
       <SocraticPanel key={currentProblem.id} problem={currentProblem} />
     </div>
   ) : (
-    <div style={{ width: '220px', flexShrink: 0, overflowY: 'auto' }}>
+    <div style={{ width: '28%', minWidth: '280px', maxWidth: '360px', flexShrink: 0, overflowY: 'auto' }}>
       <Card title={`📐 ${shapeNames[shape]}`} accent="#6366f1">
         <Row label="顶点数" value={`${verts.length}`} />
         {verts.map((v, i) => (
@@ -937,27 +964,52 @@ export function SolidGeo3D() {
 
         {/* ── 中间 3D Canvas ───────────────────────── */}
         <div style={{ flex: 1, borderRadius: '16px', overflow: 'hidden', border: '1px solid #1e293b', background: '#090d16' }}>
-          <Suspense fallback={
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#64748b' }}>
-              加载 3D 场景中…
+          <ErrorBoundary fallback={
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#fca5a5', gap: '12px', padding: '20px' }}>
+              <span style={{ fontSize: '24px' }}>⚠️</span>
+              <span style={{ fontSize: '14px', fontWeight: 'bold' }}>3D 场景渲染出错</span>
+              <span style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', maxWidth: '80%' }}>
+                可能由于浏览器 WebGL 支持不足或网络加载字体超时导致。
+              </span>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: '6px 16px',
+                  background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}
+              >
+                刷新页面
+              </button>
             </div>
           }>
-            <Canvas
-              camera={{ position: [5, 4, 5], fov: 45 }}
-              gl={{ antialias: true }}
-              shadows
-            >
-              <color attach="background" args={['#090d16']} />
-              <fog attach="fog" args={['#090d16', 12, 25]} />
-              <Scene
-                shape={shape}
-                showNormal={showNormal}
-                showLabels={showLabels}
-                rotate={rotate}
-                highlightFace={safeFace}
-              />
-            </Canvas>
-          </Suspense>
+            <Suspense fallback={
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#64748b' }}>
+                加载 3D 场景中…
+              </div>
+            }>
+              <Canvas
+                camera={{ position: [5, 4, 5], fov: 45 }}
+                gl={{ antialias: true }}
+                shadows
+              >
+                <color attach="background" args={['#090d16']} />
+                <fog attach="fog" args={['#090d16', 12, 25]} />
+                <Scene
+                  shape={shape}
+                  showNormal={showNormal}
+                  showLabels={showLabels}
+                  rotate={rotate}
+                  highlightFace={safeFace}
+                />
+              </Canvas>
+            </Suspense>
+          </ErrorBoundary>
         </div>
 
         {/* ── 右侧面板（按模式切换） ─────────────────── */}
